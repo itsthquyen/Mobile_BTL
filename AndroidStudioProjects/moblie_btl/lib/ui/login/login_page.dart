@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:moblie_btl/ui/Home/TripSync_Page.dart';
 
 import 'signup_page.dart';
 
@@ -88,7 +89,7 @@ class _LoginPageState extends State<LoginPage> {
 
       if (mounted) {
         Navigator.of(context).pushReplacement( // Dùng pushReplacement
-          MaterialPageRoute(builder: (context) => const Text("Hi")), // Chuyển đến HomePage
+          MaterialPageRoute(builder: (context) => const TripsyncPage()), // Chuyển đến HomePage
         );
       }
 
