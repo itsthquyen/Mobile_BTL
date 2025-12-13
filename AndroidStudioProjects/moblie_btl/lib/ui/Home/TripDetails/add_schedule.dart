@@ -1,9 +1,10 @@
-// File: add_schedule_modal.dart (hoặc đặt chung trong trip_details.dart)
 import 'package:flutter/material.dart';
 
 // Đảm bảo định nghĩa màu chủ đạo đã được import hoặc định nghĩa lại
 const Color mainBlueColor = Color(0xFF153359);
 const Color accentGoldColor = Color(0xFFEAD8B1);
+const Color darkFieldColor = Color(0xFF2C436D); // Màu nền cho các trường nhập liệu
+const Color lightTextColor = Colors.white; // Màu chữ chính
 
 class AddScheduleModal extends StatefulWidget {
   const AddScheduleModal({super.key});
@@ -31,13 +32,16 @@ class _AddScheduleModalState extends State<AddScheduleModal> {
       firstDate: DateTime.now(),
       lastDate: DateTime(2101),
       builder: (context, child) {
+        // Sử dụng ThemeData.dark() cho DatePicker
         return Theme(
-          data: ThemeData.light().copyWith(
-            colorScheme: ColorScheme.light(
-              primary: mainBlueColor, // Màu Header của DatePicker
-              onPrimary: Colors.white,
-              onSurface: Colors.black87,
+          data: ThemeData.dark().copyWith(
+            colorScheme: ColorScheme.dark(
+              primary: mainBlueColor,
+              onPrimary: lightTextColor,
+              surface: mainBlueColor,
+              onSurface: lightTextColor,
             ),
+            dialogBackgroundColor: mainBlueColor, // Nền chính của DatePicker
           ),
           child: child!,
         );
@@ -56,12 +60,16 @@ class _AddScheduleModalState extends State<AddScheduleModal> {
       context: context,
       initialTime: _selectedTime ?? TimeOfDay.now(),
       builder: (context, child) {
+        // Sử dụng ThemeData.dark() cho TimePicker
         return Theme(
-          data: ThemeData.light().copyWith(
-            colorScheme: ColorScheme.light(
-              primary: mainBlueColor, // Màu Header của TimePicker
-              onPrimary: Colors.white,
+          data: ThemeData.dark().copyWith(
+            colorScheme: ColorScheme.dark(
+              primary: mainBlueColor,
+              onPrimary: lightTextColor,
+              surface: mainBlueColor,
+              onSurface: lightTextColor,
             ),
+            dialogBackgroundColor: mainBlueColor,
           ),
           child: child!,
         );
@@ -76,8 +84,7 @@ class _AddScheduleModalState extends State<AddScheduleModal> {
   }
 
   void _saveSchedule() {
-    // Xử lý lưu lịch trình ở đây
-    // Ví dụ: kiểm tra _activityController.text, _selectedDate, etc.
+    // Xử lý lưu lịch trình
     Navigator.pop(context); // Đóng modal sau khi lưu
   }
 
@@ -89,7 +96,7 @@ class _AddScheduleModalState extends State<AddScheduleModal> {
 
     return Container(
       height: screenHeight * 0.9 - topPadding,
-      color: Colors.white, // Nền trắng cho Modal để tương phản
+      color: mainBlueColor, // Nền chính của Modal là màu xanh đậm
       child: Padding(
         padding: const EdgeInsets.all(20.0),
         child: Column(
@@ -98,26 +105,26 @@ class _AddScheduleModalState extends State<AddScheduleModal> {
             Container(
               padding: const EdgeInsets.symmetric(vertical: 10),
               decoration: BoxDecoration(
-                border: Border(bottom: BorderSide(color: Colors.grey.shade300)),
+                border: Border(bottom: BorderSide(color: Colors.white10)), // Viền trắng mờ
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   TextButton(
                     onPressed: () => Navigator.pop(context),
-                    child: Text('Cancel', style: TextStyle(color: mainBlueColor)),
+                    child: const Text('Cancel', style: TextStyle(color: Colors.white70)),
                   ),
                   const Text(
                     'Add New Activity',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: mainBlueColor, // Màu tiêu đề chính
+                      color: lightTextColor, // Tiêu đề trắng
                     ),
                   ),
                   TextButton(
                     onPressed: _saveSchedule,
-                    child: Text('Save', style: TextStyle(color: mainBlueColor, fontWeight: FontWeight.bold)),
+                    child: const Text('Save', style: TextStyle(color: lightTextColor, fontWeight: FontWeight.bold)),
                   ),
                 ],
               ),
@@ -181,18 +188,18 @@ class _AddScheduleModalState extends State<AddScheduleModal> {
               ),
             ),
 
-            // Nút Save (Cũng có thể dùng TextButton ở Header)
-            // ElevatedButton(
-            //   onPressed: _saveSchedule,
-            //   style: ElevatedButton.styleFrom(
-            //     backgroundColor: mainBlueColor,
-            //     minimumSize: const Size(double.infinity, 50),
-            //     shape: RoundedRectangleBorder(
-            //       borderRadius: BorderRadius.circular(10),
-            //     ),
-            //   ),
-            //   child: const Text('Save Schedule', style: TextStyle(color: Colors.white, fontSize: 16)),
-            // ),
+            // Nút Save (Dạng ElevatedButton ở dưới cùng, màu trắng nổi bật)
+            ElevatedButton(
+              onPressed: _saveSchedule,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: lightTextColor, // Nền trắng nổi bật
+                minimumSize: const Size(double.infinity, 50),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              child: Text('Save Schedule', style: TextStyle(color: mainBlueColor, fontSize: 16, fontWeight: FontWeight.bold)),
+            ),
           ],
         ),
       ),
@@ -209,20 +216,20 @@ class _AddScheduleModalState extends State<AddScheduleModal> {
     return TextField(
       controller: controller,
       maxLines: maxLines,
-      style: TextStyle(color: mainBlueColor),
+      style: const TextStyle(color: lightTextColor), // Chữ nhập màu trắng
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: TextStyle(color: Colors.grey.shade600),
-        prefixIcon: Icon(icon, color: mainBlueColor),
+        labelStyle: const TextStyle(color: Colors.white54), // Label màu trắng mờ
+        prefixIcon: Icon(icon, color: lightTextColor), // Icon màu trắng
         filled: true,
-        fillColor: Colors.grey.shade100,
+        fillColor: darkFieldColor, // Nền field đậm hơn nền modal
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: mainBlueColor, width: 2),
+          borderSide: BorderSide(color: lightTextColor, width: 2), // Focus viền trắng
         ),
       ),
     );
@@ -239,20 +246,20 @@ class _AddScheduleModalState extends State<AddScheduleModal> {
       controller: controller,
       readOnly: true,
       onTap: onTap,
-      style: TextStyle(color: mainBlueColor),
+      style: const TextStyle(color: lightTextColor), // Chữ nhập màu trắng
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: TextStyle(color: Colors.grey.shade600),
-        prefixIcon: Icon(icon, color: mainBlueColor),
+        labelStyle: const TextStyle(color: Colors.white54), // Label màu trắng mờ
+        prefixIcon: Icon(icon, color: lightTextColor), // Icon màu trắng
         filled: true,
-        fillColor: Colors.grey.shade100,
+        fillColor: darkFieldColor, // Nền field đậm hơn nền modal
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: mainBlueColor, width: 2),
+          borderSide: BorderSide(color: lightTextColor, width: 2), // Focus viền trắng
         ),
       ),
     );

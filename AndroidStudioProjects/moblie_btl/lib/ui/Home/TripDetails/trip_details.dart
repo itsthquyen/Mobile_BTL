@@ -1,34 +1,29 @@
+// lib/ui/Home/TripDetails/trip_details.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:moblie_btl/ui/Home/TripDetails/schedule_tab.dart';
 
-// Import các file cần thiết theo cấu trúc thư mục của bạn
-import 'add_schedule.dart'; // Chứa AddScheduleModal
-import './Expenses/add_expense.dart'; // Chứa AddExpenseModal
-import './Expenses/expense_page.dart'; // Chứa ExpensesTabContent
+// Import các file cần thiết
+import 'CheckList/checklist_tab.dart';
+import 'Vote/add_vote.dart';
+import 'Vote/votes_tab.dart';
+import 'add_schedule.dart';
+// Import file container quản lý, không import add_expense hay add_fund nữa
+import './Expenses/expense_fund_container.dart';
+import './Expenses/expense_page.dart';
 
-// ********************************************
-// ********** 1. TRIP MODEL (Mẫu) *************
-// ********************************************
 class Trip {
   final String title;
   final String subtitle;
   final String imageUrl;
-
   Trip({required this.title, required this.subtitle, required this.imageUrl});
 }
 
-// ********************************************
-// ******* 2. ĐỊNH NGHĨA MÀU SẮC CHỦ ĐẠO ******
-// ********************************************
 const Color mainBlueColor = Color(0xFF153359);
 const Color accentGoldColor = Color(0xFFEAD8B1);
 
-// ********************************************
-// ******** 3. WIDGET CHI TIẾT CHUYẾN ĐI *******
-// ********************************************
 class TripDetailsPage extends StatefulWidget {
   final Trip trip;
-
   const TripDetailsPage({super.key, required this.trip});
 
   @override
@@ -36,7 +31,7 @@ class TripDetailsPage extends StatefulWidget {
 }
 
 class _TripDetailsPageState extends State<TripDetailsPage> {
-  int _selectedIndex = 0; // Mặc định là Schedule (0)
+  int _selectedIndex = 0;
   final List<String> _tabs = ["Schedule", "Expenses", "Checklist", "Votes"];
 
   @override
@@ -50,14 +45,10 @@ class _TripDetailsPageState extends State<TripDetailsPage> {
       backgroundColor: mainBlueColor,
       body: Column(
         children: [
-          // 1. Phần Header màu xanh đậm (Fixed)
           _buildHeader(context),
-
-          // 2. Phần Thân (Gradient + Tab Bar + Nội dung)
           Expanded(
             child: Stack(
               children: [
-                // Lớp nền Gradient
                 Container(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
@@ -73,24 +64,19 @@ class _TripDetailsPageState extends State<TripDetailsPage> {
                     ),
                   ),
                 ),
-
-                // Nội dung chính: Tab Bar và Content
                 Column(
                   children: [
                     const SizedBox(height: 20),
                     _buildCustomTabBar(),
-
                     Expanded(
-                      child: _buildPageContent(), // Hiển thị nội dung theo tab
+                      child: _buildPageContent(),
                     ),
                   ],
                 ),
-
-                // Nút Add Button (CĂN SÁT DƯỚI)
                 Align(
                   alignment: Alignment.bottomCenter,
                   child: Padding(
-                    padding: const EdgeInsets.only(bottom: 15.0), // Vị trí sát dưới
+                    padding: const EdgeInsets.only(bottom: 15.0),
                     child: _buildAddButton(),
                   ),
                 ),
@@ -102,20 +88,73 @@ class _TripDetailsPageState extends State<TripDetailsPage> {
     );
   }
 
-  // --- Hàm Chính: Lựa chọn nội dung Tab ---
   Widget _buildPageContent() {
     switch (_selectedIndex) {
       case 0:
         return const ScheduleTabContent();
       case 1:
         return const ExpensesTabContent();
-    // Thêm các case cho Checklist và Votes khi triển khai
+      case 2:
+        return const ChecklistTabContent();
+      case 3: // *** THÊM CASE MỚI CHO VOTES ***
+        return const VotesTabContent();
       default:
         return const Center(child: Text('Content Placeholder', style: TextStyle(color: Colors.white)));
     }
   }
 
-  // --- Widget Header (Phần trên cùng) ---
+
+
+  void _showAddExpenseModal(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        // Gọi widget quản lý trung gian
+        return const FractionallySizedBox(
+          heightFactor: 0.9, // Chiếm 90% chiều cao màn hình
+          child: ExpenseFundContainer(),
+        );
+      },
+    );
+  }
+
+  void _showAddScheduleModal(BuildContext context) {
+    {
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (context) {
+          // Gọi widget quản lý trung gian
+          return const FractionallySizedBox(
+            heightFactor: 0.9, // Chiếm 90% chiều cao màn hình
+            child: AddScheduleModal(),
+          );
+        },
+      );
+    }
+  }
+
+  void _showAddVoteModal(BuildContext context) {
+    {
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (context) {
+          // Gọi widget quản lý trung gian
+          return const FractionallySizedBox(
+            heightFactor: 0.9, // Chiếm 90% chiều cao màn hình
+            child: AddVoteLocationModal(),
+          );
+        },
+      );
+    }
+  }
+
+  // ... (Tất cả các hàm build còn lại của trip_details.dart giữ nguyên)
   Widget _buildHeader(BuildContext context) {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 60, 16, 30),
@@ -127,7 +166,6 @@ class _TripDetailsPageState extends State<TripDetailsPage> {
       ),
       child: Column(
         children: [
-          // Nút Back, Title app, Search, More
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -158,14 +196,12 @@ class _TripDetailsPageState extends State<TripDetailsPage> {
             ],
           ),
           const SizedBox(height: 20),
-          // Icon ô dù (Placeholder)
           const Icon(
             Icons.beach_access,
             size: 60,
             color: Color(0xFFFFCC80),
           ),
           const SizedBox(height: 10),
-          // Tiêu đề chính (Lấy từ Trip object)
           Text(
             widget.trip.title,
             style: const TextStyle(
@@ -179,7 +215,6 @@ class _TripDetailsPageState extends State<TripDetailsPage> {
     );
   }
 
-  // --- Widget Tab Bar tùy chỉnh ---
   Widget _buildCustomTabBar() {
     return Container(
       height: 45,
@@ -221,18 +256,24 @@ class _TripDetailsPageState extends State<TripDetailsPage> {
     );
   }
 
-  // --- Widget nút tròn "Add" (FAB) ---
   Widget _buildAddButton() {
+    // Dòng code đã cập nhật
     String label = _selectedIndex == 0 ? "Add Schedule" :
-    _selectedIndex == 1 ? "Add Expense" : "Add Item";
-
+    _selectedIndex == 1 ? "Add Expense" :
+    _selectedIndex == 2 ? "Add Item" : // Cho Checklist
+    "Add Location";
     return InkWell(
       onTap: () {
-        if (_selectedIndex == 0) {
-          _showAddScheduleModal(context);
-        } else if (_selectedIndex == 1) {
-          _showAddExpenseModal(context);
-        }
+          if (_selectedIndex == 0) {
+            _showAddScheduleModal(context);
+          } else if (_selectedIndex == 1) {
+            _showAddExpenseModal(context);
+          } else if (_selectedIndex ==  2) {
+            print("Add Checklist Item tapped");
+          } else if (_selectedIndex == 3) {
+           _showAddVoteModal(context) ;
+          }
+
       },
       child: Container(
         height: 50,
@@ -261,82 +302,5 @@ class _TripDetailsPageState extends State<TripDetailsPage> {
       ),
     );
   }
-
-  // --- Hàm gọi Modal Lịch trình ---
-  void _showAddScheduleModal(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20.0)),
-      ),
-      builder: (context) {
-        // Giả định AddScheduleModal đã được import từ add_schedule.dart
-        return const AddScheduleModal();
-      },
-    );
-  }
-
-  // --- Hàm gọi Modal Chi tiêu ---
-  void _showAddExpenseModal(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20.0)),
-      ),
-      builder: (context) {
-        // GỌI WIDGET TỪ add_expense.dart
-        return const AddExpenseModal();
-      },
-    );
-  }
-} // <--- Dấu đóng ngoặc của _TripDetailsPageState đã được đặt đúng chỗ
-
-// ********************************************
-// ******** 4. NỘI DUNG TAB SCHEDULE **********
-// ********************************************
-// CLASS NÀY PHẢI ĐƯỢC ĐỊNH NGHĨA Ở TOP LEVEL (NGOÀI CLASS _TripDetailsPageState)
-class ScheduleTabContent extends StatelessWidget {
-  const ScheduleTabContent({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Spacer(flex: 2),
-          Icon(
-            Icons.manage_search_rounded,
-            size: 80,
-            color: accentGoldColor.withOpacity(0.8),
-          ),
-          const SizedBox(height: 16),
-          const Text(
-            "No Schedule Yet",
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-          ),
-          const SizedBox(height: 12),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 40),
-            child: Text(
-              'Add a schedule by tapping on the "+" to start tracking and splitting your schedules',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.white70,
-                height: 1.4,
-              ),
-            ),
-          ),
-          const Spacer(flex: 3),
-        ],
-      ),
-    );
-  }
 }
+

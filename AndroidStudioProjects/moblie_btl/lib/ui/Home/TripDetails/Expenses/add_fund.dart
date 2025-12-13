@@ -1,4 +1,4 @@
-// lib/ui/Home/TripDetails/Expenses/add_expense.dart
+// lib/ui/Home/TripDetails/Expenses/add_fund.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -7,35 +7,32 @@ const Color darkFieldColor = Color(0xFF2C436D);
 const Color lightTextColor = Colors.white;
 
 const List<String> expenseTypes = ['Expense', 'Fund', 'Transfer'];
-const List<String> tripMembers = ['Duy Hoang Nguyen (me)', 'Quyen', 'Lộc', 'Member 4'];
 
-class AddExpenseModal extends StatefulWidget {
-  final VoidCallback onNavigateToFund;
+class AddFundModal extends StatefulWidget {
+  final VoidCallback onNavigateToExpense;
   final VoidCallback onNavigateToTransfer; // Đã thêm
 
-  const AddExpenseModal({
+  const AddFundModal({
     super.key,
-    required this.onNavigateToFund,
+    required this.onNavigateToExpense,
     required this.onNavigateToTransfer, // Đã thêm
   });
 
   @override
-  State<AddExpenseModal> createState() => _AddExpenseModalState();
+  State<AddFundModal> createState() => _AddFundModalState();
 }
 
-class _AddExpenseModalState extends State<AddExpenseModal> {
-  final TextEditingController _titleController = TextEditingController(text: 'Tiền xe');
-  final TextEditingController _amountController = TextEditingController(text: '1.000.000');
+class _AddFundModalState extends State<AddFundModal> {
+  final TextEditingController _titleController = TextEditingController(text: 'Quỹ');
+  final TextEditingController _amountController = TextEditingController(text: '3.000.000');
   final TextEditingController _dateController = TextEditingController();
 
-  String? _selectedPayer = tripMembers.first;
-  DateTime _selectedDate = DateTime(2025, 12, 2);
+  DateTime _selectedDate = DateTime.now();
 
   @override
   void initState() {
     super.initState();
     _dateController.text = _formatDate(_selectedDate);
-    _titleController.addListener(() => setState(() {}));
   }
 
   @override
@@ -55,7 +52,7 @@ class _AddExpenseModalState extends State<AddExpenseModal> {
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: _selectedDate,
-      firstDate: DateTime(2023),
+      firstDate: DateTime(2020),
       lastDate: DateTime(2101),
       builder: (context, child) {
         return Theme(
@@ -72,7 +69,7 @@ class _AddExpenseModalState extends State<AddExpenseModal> {
         );
       },
     );
-    if (picked != null) {
+    if (picked != null && picked != _selectedDate) {
       setState(() {
         _selectedDate = picked;
         _dateController.text = _formatDate(picked);
@@ -80,8 +77,8 @@ class _AddExpenseModalState extends State<AddExpenseModal> {
     }
   }
 
-  void _saveExpense() {
-    print('Expense Added: ${_titleController.text} - ${_amountController.text}');
+  void _addFund() {
+    print('Fund Added: ${_titleController.text} - ${_amountController.text}');
     Navigator.pop(context);
   }
 
@@ -91,23 +88,21 @@ class _AddExpenseModalState extends State<AddExpenseModal> {
       color: mainBlueColor,
       child: Column(
         children: [
-          _buildCustomHeaderRow(context),
+          _buildCustomHeader(context),
           Expanded(
             child: SingleChildScrollView(
               child: Padding(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildTypeSegmentedControl(),
+                    _buildTypeSelector(),
                     const SizedBox(height: 25),
                     _buildTitleInput(),
                     const SizedBox(height: 25),
                     _buildAmountInput(),
                     const SizedBox(height: 25),
-                    _buildPaidByAndWhen(context),
-                    const Text('Split Details (Cần triển khai)', style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w500)),
-                    const SizedBox(height: 100),
+                    _buildWhenInput(context),
                   ],
                 ),
               ),
@@ -118,7 +113,7 @@ class _AddExpenseModalState extends State<AddExpenseModal> {
               bottom: MediaQuery.of(context).padding.bottom + 10,
               left: 20,
               right: 20,
-              top: 5,
+              top: 10,
             ),
             child: _buildAddButton(),
           ),
@@ -127,18 +122,18 @@ class _AddExpenseModalState extends State<AddExpenseModal> {
     );
   }
 
-  Widget _buildTypeSegmentedControl() {
+  Widget _buildTypeSelector() {
     return Container(
       height: 40,
       decoration: BoxDecoration(color: darkFieldColor, borderRadius: BorderRadius.circular(10)),
       child: Row(
         children: List.generate(expenseTypes.length, (index) {
-          bool isSelected = index == 0;
+          bool isSelected = index == 1; // "Fund" is selected
           return Expanded(
             child: GestureDetector(
               onTap: () {
-                if (index == 1) {
-                  widget.onNavigateToFund();
+                if (index == 0) {
+                  widget.onNavigateToExpense();
                 } else if (index == 2) {
                   widget.onNavigateToTransfer();
                 }
@@ -168,7 +163,7 @@ class _AddExpenseModalState extends State<AddExpenseModal> {
   }
 
   // --- CÁC HÀM BUILD KHÁC GIỮ NGUYÊN ---
-  Widget _buildCustomHeaderRow(BuildContext context) {
+  Widget _buildCustomHeader(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(5, 15, 20, 10),
       child: Row(
@@ -176,7 +171,7 @@ class _AddExpenseModalState extends State<AddExpenseModal> {
         children: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel', style: TextStyle(color: Colors.white70, fontSize: 16)),
+            child: const Text('Cancel', style: TextStyle(color: lightTextColor, fontSize: 16)),
           ),
           const Text('Add Expense', style: TextStyle(color: lightTextColor, fontWeight: FontWeight.bold, fontSize: 17)),
           const SizedBox(width: 80),
@@ -191,23 +186,37 @@ class _AddExpenseModalState extends State<AddExpenseModal> {
       children: [
         const Text('Title', style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w500, fontSize: 15)),
         const SizedBox(height: 8),
-        TextField(
-          controller: _titleController,
-          style: const TextStyle(color: lightTextColor, fontSize: 16),
-          decoration: InputDecoration(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
-            suffixIcon: _titleController.text.isNotEmpty
-                ? IconButton(
-              icon: const Icon(Icons.close, color: Colors.white54, size: 20),
-              onPressed: () => _titleController.clear(),
-            )
-                : null,
-            filled: true,
-            fillColor: darkFieldColor,
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
-          ),
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _titleController,
+                readOnly: true,
+                style: const TextStyle(color: lightTextColor, fontSize: 16),
+                decoration: InputDecoration(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
+                  filled: true,
+                  fillColor: darkFieldColor,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            _buildAccessoryButton(Icons.emoji_emotions_outlined),
+            const SizedBox(width: 10),
+            _buildAccessoryButton(Icons.camera_alt_outlined),
+          ],
         ),
       ],
+    );
+  }
+
+  Widget _buildAccessoryButton(IconData icon) {
+    return Container(
+      width: 50,
+      height: 50,
+      decoration: BoxDecoration(color: darkFieldColor, borderRadius: BorderRadius.circular(10)),
+      child: Icon(icon, color: Colors.white70, size: 24),
     );
   }
 
@@ -236,6 +245,7 @@ class _AddExpenseModalState extends State<AddExpenseModal> {
               child: TextField(
                 controller: _amountController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[\d\.]'))],
                 style: const TextStyle(color: lightTextColor, fontSize: 22, fontWeight: FontWeight.bold),
                 decoration: InputDecoration(
                   contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 16.5),
@@ -246,54 +256,6 @@ class _AddExpenseModalState extends State<AddExpenseModal> {
               ),
             ),
           ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildPaidByAndWhen(BuildContext context) {
-    return Column(
-      children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(child: _buildPaidByDropdown()),
-            const SizedBox(width: 20),
-            Expanded(child: _buildWhenInput(context)),
-          ],
-        ),
-        const SizedBox(height: 25),
-      ],
-    );
-  }
-
-  Widget _buildPaidByDropdown() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text('Paid by', style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w500, fontSize: 15)),
-        const SizedBox(height: 8),
-        Container(
-          height: 58,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          decoration: BoxDecoration(color: darkFieldColor, borderRadius: BorderRadius.circular(10)),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<String>(
-              value: _selectedPayer,
-              isExpanded: true,
-              icon: const Icon(Icons.keyboard_arrow_down, color: lightTextColor),
-              style: const TextStyle(color: lightTextColor, fontSize: 16),
-              dropdownColor: darkFieldColor,
-              items: tripMembers.map((String value) {
-                return DropdownMenuItem<String>(value: value, child: Text(value, overflow: TextOverflow.ellipsis));
-              }).toList(),
-              onChanged: (String? newValue) {
-                setState(() {
-                  _selectedPayer = newValue;
-                });
-              },
-            ),
-          ),
         ),
       ],
     );
@@ -326,12 +288,13 @@ class _AddExpenseModalState extends State<AddExpenseModal> {
 
   Widget _buildAddButton() {
     return ElevatedButton(
-      onPressed: _saveExpense,
+      onPressed: _addFund,
       style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.white,
+        backgroundColor: lightTextColor,
         foregroundColor: mainBlueColor,
         minimumSize: const Size(double.infinity, 55),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        elevation: 0,
       ),
       child: const Text('Add', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
     );

@@ -2,15 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:moblie_btl/ui/Identify/Identify_page.dart';
 import 'package:moblie_btl/ui/Notifications/Notifications_page.dart';
 import 'package:moblie_btl/ui/Profile/UserProfile.dart';
-
-// Đảm bảo các import này hoạt động. Tôi sẽ giữ nguyên chúng.
 import 'package:moblie_btl/ui/Home/TripDetails/trip_details.dart';
 import 'package:moblie_btl/ui/Home/new_Trip/new_Trip.dart';
 
-// Màu chủ đạo
+
 const primaryColor = Color(0xFF153359);
 
-// Lớp Trip đã được xóa khỏi đây vì nó được import từ trip_details.dart
+
 
 class TripsyncPage extends StatefulWidget {
   const TripsyncPage({super.key});
@@ -103,16 +101,14 @@ class _TripsyncPageState extends State<TripsyncPage> {
   }
 }
 
-// **********************************************
+
 // ************ TRIPSYNC CONTENT PAGE ***********
-// **********************************************
 
 class TripSyncContentPage extends StatelessWidget {
   const TripSyncContentPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // Định nghĩa chuyến đi hiện tại
     final currentTrip = Trip(
       title: 'Ha Long Bay',
       subtitle: 'This is a sample tricount',
