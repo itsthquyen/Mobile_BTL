@@ -52,7 +52,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyDECovGeeY_ixssp8jM_OVTuADXRcOafSY',
-    appId: '1:7991489002:android:d3b02125e627ca23f30293',
+    appId: '1:7991489002:android:c7e488b25633693df30293',
     messagingSenderId: '7991489002',
     projectId: 'hiiii-3347c',
     storageBucket: 'hiiii-3347c.firebasestorage.app',
@@ -60,30 +60,30 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyDZI2Jzo6thriXq_xOBdHq1SdyJ1Wi1QMM',
-    appId: '1:7991489002:ios:c70412bea0748b22f30293',
+    appId: '1:7991489002:ios:2aa351306b03bfd5f30293',
     messagingSenderId: '7991489002',
     projectId: 'hiiii-3347c',
     storageBucket: 'hiiii-3347c.firebasestorage.app',
-    iosBundleId: 'com.example.moblieBtl',
+    iosBundleId: 'com.example.ui',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
     apiKey: 'AIzaSyDZI2Jzo6thriXq_xOBdHq1SdyJ1Wi1QMM',
-    appId: '1:7991489002:ios:c70412bea0748b22f30293',
+    appId: '1:7991489002:ios:2aa351306b03bfd5f30293',
     messagingSenderId: '7991489002',
     projectId: 'hiiii-3347c',
     storageBucket: 'hiiii-3347c.firebasestorage.app',
-    iosBundleId: 'com.example.moblieBtl',
+    iosBundleId: 'com.example.ui',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(
     apiKey: 'AIzaSyBTUoqLoOTStx6WfyRjKfUWJEnOCByDiSA',
-    appId: '1:7991489002:web:b1c23e192d388c36f30293',
+    appId: '1:7991489002:web:f0eb91ccadf08761f30293',
     messagingSenderId: '7991489002',
     projectId: 'hiiii-3347c',
     authDomain: 'hiiii-3347c.firebaseapp.com',
     storageBucket: 'hiiii-3347c.firebasestorage.app',
-    measurementId: 'G-2GMZ5Z30BZ',
+    measurementId: 'G-T27ZFLSB93',
   );
 
 }

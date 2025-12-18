@@ -1,6 +1,6 @@
 {
-    "name": "moblie_btl",
-    "short_name": "moblie_btl",
+    "name": "ui",
+    "short_name": "ui",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

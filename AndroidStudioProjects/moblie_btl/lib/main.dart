@@ -1,26 +1,26 @@
-import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'ui/login/login_page.dart'; // Import LoginPage
+import 'package:flutter/material.dart';
+import 'package:ui/ui/login/login_page.dart';
 
-void main() async {
-  // Đảm bảo Flutter widgets đã được khởi tạo
+import 'firebase_options.dart';
+
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  // Khởi tạo Firebase
-  await Firebase.initializeApp();
-
-  runApp(const LoginApp());
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  runApp(const MyApp());
 }
 
-class LoginApp extends StatelessWidget {
-  const LoginApp({super.key});
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return const MaterialApp(
-      title: 'Firebase Login Demo',
+      title: 'TripSync Demo',
       debugShowCheckedModeBanner: false,
-      home: LoginPage(), // Bắt đầu với LoginPage
+      home: LoginPage(), // Luôn bắt đầu với LoginPage
     );
   }
 }
