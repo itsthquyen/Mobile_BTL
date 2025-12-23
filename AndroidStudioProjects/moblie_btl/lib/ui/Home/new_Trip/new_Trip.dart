@@ -2,7 +2,6 @@
 
 import 'package:flutter/material.dart';
 import 'package:moblie_btl/ui/Home/new_Trip/create_trip.dart';
-
 import 'join_trip.dart';
 
 const primaryColor = Color(0xFF153359);
@@ -10,19 +9,17 @@ const primaryColor = Color(0xFF153359);
 class NewTripOptionsModal extends StatelessWidget {
   const NewTripOptionsModal({super.key});
 
-  // Hàm xử lý khi chọn 'Start a new trip'
+  // ===== TẠO CHUYẾN ĐI MỚI =====
   void _startNewTrip(BuildContext context) {
-    Navigator.pop(context); // Đóng Modal
-    // TODO: Điều hướng đến màn hình tạo chuyến đi mới (NewTripPage)
+    Navigator.pop(context); // Đóng modal
     Navigator.of(context).push(
       MaterialPageRoute(builder: (context) => const CreateTrip()),
     );
   }
 
-  // Hàm xử lý khi chọn 'Join an existing trip'
+  // ===== THAM GIA CHUYẾN ĐI =====
   void _joinExistingTrip(BuildContext context) {
-    Navigator.pop(context); // Đóng Modal
-    // TODO: Mở hộp thoại nhập mã mời hoặc liên kết
+    Navigator.pop(context); // Đóng modal
     Navigator.of(context).push(
       MaterialPageRoute(builder: (context) => const JoinTripPage()),
     );
@@ -37,45 +34,45 @@ class NewTripOptionsModal extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
+            // ===== TIÊU ĐỀ =====
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                // Tiêu đề "Add"
                 const Text(
-                  'Add',
+                  'Thêm chuyến đi',
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
                     color: primaryColor,
                   ),
                 ),
-                // Nút "X" (Đóng)
                 IconButton(
                   icon: const Icon(Icons.close, size: 30, color: Colors.grey),
                   onPressed: () => Navigator.pop(context),
                 ),
               ],
             ),
+
             const SizedBox(height: 20),
 
-            // 1. Tùy chọn Start a new trip
+            // ===== TẠO CHUYẾN ĐI MỚI =====
             _buildOptionCard(
-              context: context,
               icon: Icons.add_circle_outline,
-              title: 'Start a new trip',
-              subtitle: 'Start a new tricount from scratch.',
+              title: 'Tạo chuyến đi mới',
+              subtitle: 'Bắt đầu một chuyến đi mới từ đầu.',
               onTap: () => _startNewTrip(context),
             ),
+
             const SizedBox(height: 15),
 
-            // 2. Tùy chọn Join an existing trip
+            // ===== THAM GIA CHUYẾN ĐI =====
             _buildOptionCard(
-              context: context,
               icon: Icons.link,
-              title: 'Join an existing trip',
-              subtitle: 'Use an invite link to join an existing trip.',
+              title: 'Tham gia chuyến đi',
+              subtitle: 'Nhập mã mời hoặc liên kết để tham gia.',
               onTap: () => _joinExistingTrip(context),
             ),
+
             const SizedBox(height: 20),
           ],
         ),
@@ -83,9 +80,8 @@ class NewTripOptionsModal extends StatelessWidget {
     );
   }
 
-  // Widget riêng cho từng Card tùy chọn
+  // ===== CARD TÙY CHỌN =====
   Widget _buildOptionCard({
-    required BuildContext context,
     required IconData icon,
     required String title,
     required String subtitle,
@@ -103,11 +99,9 @@ class NewTripOptionsModal extends StatelessWidget {
           padding: const EdgeInsets.all(15.0),
           child: Row(
             children: [
-              // Icon
               Icon(icon, color: primaryColor, size: 30),
               const SizedBox(width: 15),
 
-              // Title và Subtitle
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -132,8 +126,8 @@ class NewTripOptionsModal extends StatelessWidget {
                 ),
               ),
 
-              // Arrow
-              const Icon(Icons.chevron_right, color: Colors.grey, size: 24),
+              const Icon(Icons.chevron_right,
+                  color: Colors.grey, size: 24),
             ],
           ),
         ),

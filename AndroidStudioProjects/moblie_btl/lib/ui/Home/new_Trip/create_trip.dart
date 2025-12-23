@@ -25,7 +25,7 @@ class _NewTripPageState extends State<CreateTrip> {
 
   // State
   List<Map<String, dynamic>> participants = [];
-  
+
   String selectedCurrency = 'VND';
   final List<String> currencies = ['VND', 'USD', 'EUR'];
 
@@ -218,7 +218,7 @@ class _NewTripPageState extends State<CreateTrip> {
         // Thử thêm thành viên
         final success = await _addParticipantByEmail();
         // Nếu thêm thất bại (không tìm thấy user), dừng lại để người dùng kiểm tra
-        if (!success) return; 
+        if (!success) return;
       } else {
         // Nếu chọn Không, xóa text đi để tiếp tục
         _participantController.clear();
@@ -233,16 +233,16 @@ class _NewTripPageState extends State<CreateTrip> {
       final coverUrl = _getRandomCoverUrl();
 
       Map<String, dynamic> membersMap = {};
-      
+
       for (var p in participants) {
         final uid = p['uid'] as String?;
         final role = p['role'] as String?;
-        
+
         if (uid != null && uid.isNotEmpty && role != null) {
           membersMap[uid] = role;
         }
       }
-      
+
       if (!membersMap.containsKey(user.uid)) {
         membersMap[user.uid] = 'admin';
       }
@@ -256,7 +256,7 @@ class _NewTripPageState extends State<CreateTrip> {
         'totalBudget': 0,
         'fundTotal': 0,
         'joinCode': joinCode,
-        'members': membersMap, 
+        'members': membersMap,
         'currency': selectedCurrency,
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
@@ -274,7 +274,7 @@ class _NewTripPageState extends State<CreateTrip> {
             children: [
               const Text('Chuyến đi đã được tạo thành công.'),
               const SizedBox(height: 20),
-              const Text('Share this code:', style: TextStyle(color: Colors.grey)),
+              const Text('Chia sẻ mã code:', style: TextStyle(color: Colors.grey)),
               const SizedBox(height: 10),
               GestureDetector(
                 onTap: () {
@@ -332,31 +332,31 @@ class _NewTripPageState extends State<CreateTrip> {
           icon: const Icon(Icons.close, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text('Add Trip', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: const Text('Thêm chuyến đi', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
       ),
-      body: _isLoading 
-        ? const Center(child: CircularProgressIndicator()) 
+      body: _isLoading
+        ? const Center(child: CircularProgressIndicator())
         : SingleChildScrollView(
         padding: const EdgeInsets.all(20.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            const Text('Trip Name', style: TextStyle(fontWeight: FontWeight.bold, color: primaryColor)),
+            const Text('Tên chuyến đi', style: TextStyle(fontWeight: FontWeight.bold, color: primaryColor)),
             const SizedBox(height: 8),
             _buildCustomTextField(
               controller: _titleController,
-              hintText: 'e.g. Summer Vacation',
+              hintText: 'VD: Hạ Long',
               prefixIcon: const Icon(Icons.flag, color: Colors.grey),
             ),
             const SizedBox(height: 20),
 
-            const Text('Duration', style: TextStyle(fontWeight: FontWeight.bold, color: primaryColor)),
+            const Text('Ngày và giờ', style: TextStyle(fontWeight: FontWeight.bold, color: primaryColor)),
             const SizedBox(height: 8),
             Row(
               children: [
                 Expanded(
                   child: _buildDateSelector(
-                    label: 'Start Date',
+                    label: 'Ngày bắt đầu',
                     date: _startDate,
                     onTap: () => _selectDate(context, true),
                   ),
@@ -364,7 +364,7 @@ class _NewTripPageState extends State<CreateTrip> {
                 const SizedBox(width: 15),
                 Expanded(
                   child: _buildDateSelector(
-                    label: 'End Date',
+                    label: 'Ngày kết thúc',
                     date: _endDate,
                     onTap: () => _selectDate(context, false),
                   ),
@@ -373,24 +373,24 @@ class _NewTripPageState extends State<CreateTrip> {
             ),
             const SizedBox(height: 20),
 
-            const Text('Currency', style: TextStyle(fontWeight: FontWeight.bold, color: primaryColor)),
+            const Text('Giá', style: TextStyle(fontWeight: FontWeight.bold, color: primaryColor)),
             const SizedBox(height: 8),
             _buildCurrencyDropdown(),
             const SizedBox(height: 20),
 
-            const Text('Participants', style: TextStyle(fontWeight: FontWeight.bold, color: primaryColor)),
+            const Text('Thành viên', style: TextStyle(fontWeight: FontWeight.bold, color: primaryColor)),
             const SizedBox(height: 5),
-            const Text('Add participants by their email address.', style: TextStyle(fontSize: 12, color: Colors.grey)),
+            const Text('Thêm thành viên bằng email', style: TextStyle(fontSize: 12, color: Colors.grey)),
             const SizedBox(height: 10),
 
             _buildParticipantsList(),
-            
+
             const SizedBox(height: 10),
             _buildCustomTextField(
               controller: _participantController,
-              hintText: 'Enter user email to add',
-              suffixIcon: _isSearchingUser 
-                  ? const Padding(padding: EdgeInsets.all(12.0), child: CircularProgressIndicator(strokeWidth: 2)) 
+              hintText: 'Nhập email',
+              suffixIcon: _isSearchingUser
+                  ? const Padding(padding: EdgeInsets.all(12.0), child: CircularProgressIndicator(strokeWidth: 2))
                   : IconButton(
                       icon: const Icon(Icons.add_circle, color: primaryColor),
                       onPressed: () => _addParticipantByEmail(),
@@ -408,7 +408,7 @@ class _NewTripPageState extends State<CreateTrip> {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
                   elevation: 5,
                 ),
-                child: const Text('Create Trip', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
+                child: const Text('Thêm chuyến đi', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
               ),
             ),
             const SizedBox(height: 20),
@@ -440,9 +440,9 @@ class _NewTripPageState extends State<CreateTrip> {
                 const Icon(Icons.calendar_today, size: 16, color: primaryColor),
                 const SizedBox(width: 8),
                 Text(
-                  date != null ? _formatDate(date) : 'Select',
+                  date != null ? _formatDate(date) : 'Chọn',
                   style: TextStyle(
-                    fontSize: 16, 
+                    fontSize: 16,
                     fontWeight: date != null ? FontWeight.bold : FontWeight.normal,
                     color: date != null ? Colors.black : Colors.grey,
                   ),
