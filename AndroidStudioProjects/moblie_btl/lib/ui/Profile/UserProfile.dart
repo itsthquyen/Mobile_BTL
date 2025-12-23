@@ -243,7 +243,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         ),
                       ),
                       child: const Text(
-                        'Log Out',
+                        'Đăng xuất',
                         style:
                         TextStyle(fontSize: 20, color: Colors.white),
                       ),
@@ -275,7 +275,7 @@ class _ProfilePageState extends State<ProfilePage> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text(
-                'Profile',
+                'Thông tin cá nhân',
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 32,

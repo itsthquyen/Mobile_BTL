@@ -6,7 +6,8 @@ class Trip {
   final String coverUrl;   // Firestore field: coverUrl
   final int memberCount;
   final Map<String, dynamic> members; // Firestore field: members
-  final DateTime? startDate; // Thêm startDate để sort
+  final DateTime? startDate;
+  final String? joinCode;   // THÊM TRƯỜNG joinCode
 
   Trip({
     required this.id,
@@ -15,19 +16,17 @@ class Trip {
     required this.members,
     this.memberCount = 0,
     this.startDate,
+    this.joinCode,
   });
 
   // Factory constructor để tạo Trip từ Firestore Document
   factory Trip.fromFirestore(String id, Map<String, dynamic> data) {
-    // Xử lý an toàn cho members map
     Map<String, dynamic> membersMap = {};
     if (data['members'] != null && data['members'] is Map) {
       final rawMap = data['members'] as Map;
-      // Convert keys & values sang String, dynamic để đảm bảo type safety
       membersMap = rawMap.map((key, value) => MapEntry(key.toString(), value));
     }
 
-    // Xử lý startDate (Timestamp -> DateTime)
     DateTime? start;
     if (data['startDate'] != null && data['startDate'] is Timestamp) {
       start = (data['startDate'] as Timestamp).toDate();
@@ -40,6 +39,7 @@ class Trip {
       members: membersMap,
       memberCount: membersMap.length,
       startDate: start,
+      joinCode: data['joinCode'] as String?, // LẤY joinCode TỪ FIRESTORE
     );
   }
 }

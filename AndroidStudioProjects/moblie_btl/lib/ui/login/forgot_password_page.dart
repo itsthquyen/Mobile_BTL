@@ -3,7 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-// Using the same colors from login_page.dart
+// Sử dụng cùng bảng màu từ login_page.dart
 const primaryColor = Color(0xFF153359);
 const inputFillColor = Color(0xFFF0F0FF);
 
@@ -40,18 +40,21 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
         email: _emailController.text.trim(),
       );
       setState(() {
-        _message = 'A password reset link has been sent to your email.';
+        _message = 'Liên kết đặt lại mật khẩu đã được gửi đến email của bạn.';
       });
     } on FirebaseAuthException catch (e) {
+      // Chuyển đổi mã lỗi Firebase sang tiếng Việt
       if (e.code == 'user-not-found') {
-        _errorMessage = 'No user found for that email.';
+        _errorMessage = 'Không tìm thấy người dùng với email này.';
       } else if (e.code == 'invalid-email') {
-        _errorMessage = 'The email format is invalid.';
+        _errorMessage = 'Định dạng email không hợp lệ.';
+      } else if (e.code == 'too-many-requests') {
+        _errorMessage = 'Yêu cầu quá thường xuyên. Vui lòng thử lại sau.';
       } else {
-        _errorMessage = 'An error occurred: ${e.message}';
+        _errorMessage = 'Đã xảy ra lỗi: ${e.message}';
       }
     } catch (e) {
-      _errorMessage = 'An error occurred: $e';
+      _errorMessage = 'Đã xảy ra lỗi không xác định: $e';
     } finally {
       setState(() {
         _isLoading = false;
@@ -74,6 +77,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
       ),
       body: SingleChildScrollView(
         child: Container(
+          // Tính toán chiều cao để tránh lỗi tràn bộ nhớ khi hiện bàn phím
           height: size.height > 600 ? size.height - kToolbarHeight - MediaQuery.of(context).padding.top : null,
           decoration: const BoxDecoration(color: Colors.white),
           padding: const EdgeInsets.symmetric(horizontal: 30.0, vertical: 40.0),
@@ -82,9 +86,9 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
             children: <Widget>[
               const Spacer(flex: 1),
 
-              // 1. Title
+              // 1. Tiêu đề
               const Text(
-                'Forgot Password',
+                'Quên mật khẩu',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: primaryColor,
@@ -94,9 +98,9 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
               ),
               const SizedBox(height: 16),
 
-              // 2. Info Message
+              // 2. Tin nhắn hướng dẫn
               const Text(
-                'Enter your email and we will send you a link to reset your password.',
+                'Nhập email của bạn và chúng tôi sẽ gửi một liên kết để đặt lại mật khẩu mới.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 18,
@@ -106,12 +110,12 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
               ),
               const SizedBox(height: 40),
 
-              // 3. Email Input
+              // 3. Ô nhập Email
               TextField(
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
                 decoration: InputDecoration(
-                  hintText: 'Email',
+                  hintText: 'Địa chỉ Email',
                   filled: true,
                   fillColor: inputFillColor,
                   prefixIcon: const Icon(Icons.email_outlined, color: primaryColor),
@@ -133,7 +137,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
               ),
               const SizedBox(height: 20),
 
-              // Success Message Display
+              // Hiển thị thông báo thành công
               if (_message != null)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 10.0),
@@ -144,7 +148,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                   ),
                 ),
 
-              // Error Message Display
+              // Hiển thị thông báo lỗi
               if (_errorMessage != null)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 10.0),
@@ -157,7 +161,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
 
               const SizedBox(height: 20),
 
-              // 4. "Send Request" Button
+              // 4. Nút "Gửi yêu cầu"
               SizedBox(
                 height: 55,
                 child: ElevatedButton(
@@ -172,7 +176,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                   child: _isLoading
                       ? const CircularProgressIndicator(color: Colors.white)
                       : const Text(
-                    'Send Request',
+                    'Gửi yêu cầu',
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,

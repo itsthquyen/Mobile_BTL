@@ -1,265 +1,334 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
-// Đảm bảo định nghĩa màu chủ đạo đã được import hoặc định nghĩa lại
-const Color mainBlueColor = Color(0xFF153359);
-const Color accentGoldColor = Color(0xFFEAD8B1);
-const Color darkFieldColor = Color(0xFF2C436D); // Màu nền cho các trường nhập liệu
-const Color lightTextColor = Colors.white; // Màu chữ chính
+// --- MÀU SẮC ĐỒNG BỘ VỚI ADD_EXPENSE ---
+const primaryColor = Color(0xFF153359);
+const darkFieldColor = Color(0xFF2C436D);
+const lightTextColor = Colors.white;
 
 class AddScheduleModal extends StatefulWidget {
-  const AddScheduleModal({super.key});
+  final String tripId;
+  // Dữ liệu cho chế độ chỉnh sửa (có thể null)
+  final Map<String, dynamic>? scheduleData;
+  final String? scheduleId;
+
+  const AddScheduleModal({
+    super.key,
+    required this.tripId,
+    this.scheduleData,
+    this.scheduleId,
+  });
 
   @override
   State<AddScheduleModal> createState() => _AddScheduleModalState();
 }
 
 class _AddScheduleModalState extends State<AddScheduleModal> {
-  // Các Controllers cho Form
-  final TextEditingController _activityController = TextEditingController();
-  final TextEditingController _locationController = TextEditingController();
-  final TextEditingController _dateController = TextEditingController();
-  final TextEditingController _timeController = TextEditingController();
-  final TextEditingController _notesController = TextEditingController();
+  final _titleController = TextEditingController();
+  final _locationController = TextEditingController();
+  final _descriptionController = TextEditingController();
 
-  // State quản lý ngày và giờ
-  DateTime? _selectedDate;
-  TimeOfDay? _selectedTime;
+  DateTime? _startTime;
+  DateTime? _endTime;
+  bool _isLoading = false;
 
-  Future<void> _selectDate(BuildContext context) async {
-    final DateTime? picked = await showDatePicker(
+  bool get _isEditing => widget.scheduleId != null;
+
+  @override
+  void initState() {
+    super.initState();
+    // Nếu là chế độ chỉnh sửa, điền sẵn thông tin
+    if (_isEditing && widget.scheduleData != null) {
+      final data = widget.scheduleData!;
+      _titleController.text = data['title'] ?? '';
+      _locationController.text = data['locationName'] ?? '';
+      _descriptionController.text = data['description'] ?? '';
+      if (data['startTime'] is Timestamp) {
+        _startTime = (data['startTime'] as Timestamp).toDate();
+      }
+      if (data['endTime'] is Timestamp) {
+        _endTime = (data['endTime'] as Timestamp).toDate();
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _locationController.dispose();
+    _descriptionController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickDateTime(bool isStart) async {
+    final date = await showDatePicker(
       context: context,
-      initialDate: _selectedDate ?? DateTime.now(),
-      firstDate: DateTime.now(),
-      lastDate: DateTime(2101),
-      builder: (context, child) {
-        // Sử dụng ThemeData.dark() cho DatePicker
+      initialDate: DateTime.now(),
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2030),
+       builder: (context, child) {
         return Theme(
           data: ThemeData.dark().copyWith(
-            colorScheme: ColorScheme.dark(
-              primary: mainBlueColor,
+            colorScheme: const ColorScheme.dark(
+              primary: primaryColor,
               onPrimary: lightTextColor,
-              surface: mainBlueColor,
+              surface: darkFieldColor,
               onSurface: lightTextColor,
             ),
-            dialogBackgroundColor: mainBlueColor, // Nền chính của DatePicker
+            dialogBackgroundColor: primaryColor,
           ),
           child: child!,
         );
       },
     );
-    if (picked != null && picked != _selectedDate) {
-      setState(() {
-        _selectedDate = picked;
-        _dateController.text = "${picked.day}/${picked.month}/${picked.year}";
-      });
-    }
-  }
+    if (date == null || !mounted) return;
 
-  Future<void> _selectTime(BuildContext context) async {
-    final TimeOfDay? picked = await showTimePicker(
+    final time = await showTimePicker(
       context: context,
-      initialTime: _selectedTime ?? TimeOfDay.now(),
-      builder: (context, child) {
-        // Sử dụng ThemeData.dark() cho TimePicker
+      initialTime: TimeOfDay.fromDateTime(DateTime.now()),
+       builder: (context, child) {
         return Theme(
           data: ThemeData.dark().copyWith(
-            colorScheme: ColorScheme.dark(
-              primary: mainBlueColor,
+            colorScheme: const ColorScheme.dark(
+              primary: primaryColor,
               onPrimary: lightTextColor,
-              surface: mainBlueColor,
-              onSurface: lightTextColor,
-            ),
-            dialogBackgroundColor: mainBlueColor,
+              surface: darkFieldColor,
+              onSurface: lightTextColor,),
+            dialogBackgroundColor: primaryColor,
           ),
           child: child!,
         );
       },
     );
-    if (picked != null && picked != _selectedTime) {
-      setState(() {
-        _selectedTime = picked;
-        _timeController.text = picked.format(context);
-      });
+    if (time == null) return;
+
+    final dateTime = DateTime(date.year, date.month, date.day, time.hour, time.minute);
+
+    setState(() {
+      if (isStart) {
+        _startTime = dateTime;
+        if (_endTime != null && _endTime!.isBefore(_startTime!)) {
+          _endTime = null;
+        }
+      } else {
+        _endTime = dateTime;
+      }
+    });
+  }
+
+  // --- HÀM LƯU HOẶC CẬP NHẬT LỊCH TRÌNH ---
+  Future<void> _saveOrUpdateSchedule() async {
+    final title = _titleController.text.trim();
+    if (title.isEmpty || _startTime == null || _endTime == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Vui lòng nhập tiêu đề và chọn thời gian đầy đủ.')),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      final schedulePayload = {
+        'title': title,
+        'locationName': _locationController.text.trim(),
+        'description': _descriptionController.text.trim(),
+        'startTime': Timestamp.fromDate(_startTime!),
+        'endTime': Timestamp.fromDate(_endTime!),
+        'updatedAt': FieldValue.serverTimestamp(), // Thêm trường update
+      };
+
+      final itineraryRef = FirebaseFirestore.instance
+          .collection('trips')
+          .doc(widget.tripId)
+          .collection('itinerary');
+
+      if (_isEditing) {
+        // Chế độ chỉnh sửa: UPDATE
+        await itineraryRef.doc(widget.scheduleId).update(schedulePayload);
+      } else {
+        // Chế độ thêm mới: ADD
+        schedulePayload['createdAt'] = FieldValue.serverTimestamp();
+        schedulePayload['type'] = 'activity';
+        schedulePayload['status'] = 'planned';
+        await itineraryRef.add(schedulePayload);
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(_isEditing ? 'Đã cập nhật lịch trình!' : 'Đã thêm lịch trình thành công!')));
+        Navigator.of(context).pop();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lỗi: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
-  void _saveSchedule() {
-    // Xử lý lưu lịch trình
-    Navigator.pop(context); // Đóng modal sau khi lưu
+  String _formatDateTime(DateTime dt) {
+      return '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year.toString().substring(2)} ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
   }
 
   @override
   Widget build(BuildContext context) {
-    // Để modal chiếm gần hết màn hình, trừ phần status bar
-    final screenHeight = MediaQuery.of(context).size.height;
-    final topPadding = MediaQuery.of(context).padding.top;
-
     return Container(
-      height: screenHeight * 0.9 - topPadding,
-      color: mainBlueColor, // Nền chính của Modal là màu xanh đậm
-      child: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          children: [
-            // Header của Modal
-            Container(
-              padding: const EdgeInsets.symmetric(vertical: 10),
-              decoration: BoxDecoration(
-                border: Border(bottom: BorderSide(color: Colors.white10)), // Viền trắng mờ
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('Cancel', style: TextStyle(color: Colors.white70)),
-                  ),
-                  const Text(
-                    'Add New Activity',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: lightTextColor, // Tiêu đề trắng
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: _saveSchedule,
-                    child: const Text('Save', style: TextStyle(color: lightTextColor, fontWeight: FontWeight.bold)),
-                  ),
-                ],
-              ),
-            ),
-
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.only(top: 20),
-                child: Column(
-                  children: [
-                    // 1. Tên Hoạt động
-                    _buildInputField(
-                      controller: _activityController,
-                      label: 'Activity Name',
-                      icon: Icons.edit,
-                    ),
-                    const SizedBox(height: 15),
-
-                    // 2. Địa điểm
-                    _buildInputField(
-                      controller: _locationController,
-                      label: 'Location (Optional)',
-                      icon: Icons.location_on,
-                    ),
-                    const SizedBox(height: 15),
-
-                    // 3. Ngày và Giờ
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _buildDateTimePicker(
-                            controller: _dateController,
-                            label: 'Date',
-                            icon: Icons.calendar_today,
-                            onTap: () => _selectDate(context),
-                          ),
-                        ),
-                        const SizedBox(width: 15),
-                        Expanded(
-                          child: _buildDateTimePicker(
-                            controller: _timeController,
-                            label: 'Time',
-                            icon: Icons.schedule,
-                            onTap: () => _selectTime(context),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 15),
-
-                    // 4. Ghi chú
-                    _buildInputField(
-                      controller: _notesController,
-                      label: 'Notes / Details',
-                      icon: Icons.notes,
-                      maxLines: 4,
-                    ),
-                    const SizedBox(height: 50),
-                  ],
-                ),
-              ),
-            ),
-
-            // Nút Save (Dạng ElevatedButton ở dưới cùng, màu trắng nổi bật)
-            ElevatedButton(
-              onPressed: _saveSchedule,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: lightTextColor, // Nền trắng nổi bật
-                minimumSize: const Size(double.infinity, 50),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-              child: Text('Save Schedule', style: TextStyle(color: mainBlueColor, fontSize: 16, fontWeight: FontWeight.bold)),
-            ),
-          ],
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom, 
+          left: 20,
+          right: 20,
+          top: 20,
         ),
-      ),
+        decoration: const BoxDecoration(
+          color: primaryColor, 
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: SingleChildScrollView(
+            child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+                 Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                    TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('Hủy', style: TextStyle(color: Colors.white70, fontSize: 16)),
+                    ),
+                    Text(
+                        _isEditing ? 'Chỉnh sửa lịch trình' : 'Thêm lịch trình',
+                        style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: lightTextColor),
+                    ),
+                    const SizedBox(width: 60), 
+                    ],
+                ),
+                const SizedBox(height: 16),
+
+                _buildCustomTextField(
+                  controller: _titleController,
+                  hintText: 'Tiêu đề *',
+                  prefixIcon: const Icon(Icons.title, color: Colors.white70),
+                ),
+                const SizedBox(height: 16),
+                 _buildCustomTextField(
+                  controller: _locationController,
+                  hintText: 'Địa điểm',
+                   prefixIcon: const Icon(Icons.location_on_outlined, color: Colors.white70),
+                ),
+                const SizedBox(height: 16),
+                _buildCustomTextField(
+                  controller: _descriptionController,
+                  hintText: 'Mô tả',
+                  prefixIcon: const Icon(Icons.description_outlined, color: Colors.white70),
+                  maxLines: 3,
+                ),
+                const SizedBox(height: 20),
+
+                Row(
+                children: [
+                    Expanded(
+                    child: _buildTimePicker(
+                        label: 'Bắt đầu *',
+                        time: _startTime,
+                        onTap: () => _pickDateTime(true),
+                    ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                    child: _buildTimePicker(
+                        label: 'Kết thúc *',
+                        time: _endTime,
+                        onTap: () => _pickDateTime(false),
+                    ),
+                    ),
+                ],
+                ),
+                const SizedBox(height: 30),
+
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton(
+                      onPressed: _isLoading ? null : _saveOrUpdateSchedule,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: lightTextColor,
+                        foregroundColor: primaryColor, 
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: _isLoading
+                          ? const CircularProgressIndicator(color: primaryColor)
+                          : Text(_isEditing ? 'Lưu thay đổi' : 'Thêm lịch trình', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  ),
+                ),
+                 const SizedBox(height: 16),
+            ],
+            ),
+        ),
     );
   }
 
-  // Widget chung cho các trường nhập liệu
-  Widget _buildInputField({
+   Widget _buildCustomTextField({
     required TextEditingController controller,
-    required String label,
-    required IconData icon,
-    int maxLines = 1,
+    required String hintText,
+    Widget? prefixIcon,
+    int? maxLines = 1,
   }) {
     return TextField(
       controller: controller,
       maxLines: maxLines,
-      style: const TextStyle(color: lightTextColor), // Chữ nhập màu trắng
+      style: const TextStyle(color: lightTextColor),
       decoration: InputDecoration(
-        labelText: label,
-        labelStyle: const TextStyle(color: Colors.white54), // Label màu trắng mờ
-        prefixIcon: Icon(icon, color: lightTextColor), // Icon màu trắng
+        hintText: hintText,
+        hintStyle: const TextStyle(color: Colors.white54),
         filled: true,
-        fillColor: darkFieldColor, // Nền field đậm hơn nền modal
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: lightTextColor, width: 2), // Focus viền trắng
-        ),
+        fillColor: darkFieldColor, 
+        prefixIcon: prefixIcon,
+        contentPadding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 16.0),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.0), borderSide: BorderSide.none),
       ),
     );
   }
 
-  // Widget chung cho Date/Time Picker
-  Widget _buildDateTimePicker({
-    required TextEditingController controller,
+  Widget _buildTimePicker({
     required String label,
-    required IconData icon,
+    required DateTime? time,
     required VoidCallback onTap,
   }) {
-    return TextField(
-      controller: controller,
-      readOnly: true,
+    return InkWell(
       onTap: onTap,
-      style: const TextStyle(color: lightTextColor), // Chữ nhập màu trắng
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: const TextStyle(color: Colors.white54), // Label màu trắng mờ
-        prefixIcon: Icon(icon, color: lightTextColor), // Icon màu trắng
-        filled: true,
-        fillColor: darkFieldColor, // Nền field đậm hơn nền modal
-        border: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+        decoration: BoxDecoration(
+          color: darkFieldColor, 
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
         ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: lightTextColor, width: 2), // Focus viền trắng
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(label, style: const TextStyle(color: Colors.white70, fontSize: 12)),
+            const SizedBox(height: 5),
+            Row(
+              children: [
+                const Icon(Icons.access_time, size: 16, color: lightTextColor),
+                const SizedBox(width: 8),
+                Text(
+                  time != null ? _formatDateTime(time) : 'Chọn giờ',
+                  style: TextStyle(
+                    fontSize: 16, 
+                    fontWeight: time != null ? FontWeight.bold : FontWeight.normal,
+                    color: time != null ? lightTextColor : Colors.white54,
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );

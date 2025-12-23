@@ -4,21 +4,19 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'login_page.dart';
 
-// Thay đổi mã màu chính (Primary Color)
-const primaryColor = Color(0xFF153359); // Màu mới: 153359
+// Các hằng số màu sắc
+const primaryColor = Color(0xFF153359);
 const inputFillColor = Color(0xFFF0F0FF);
 
-// Social Login Button Widget (Giữ nguyên)
+// Widget nút đăng nhập mạng xã hội
 class _SocialLoginButton extends StatelessWidget {
   final String icon;
   final VoidCallback onTap;
-  final Color primaryColor;
 
-  const _SocialLoginButton({required this.icon, required this.onTap, required this.primaryColor});
+  const _SocialLoginButton({required this.icon, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    // ... (Code Widget này không thay đổi nhiều, nhưng cần nhận primaryColor)
     return InkWell(
       onTap: onTap,
       child: Container(
@@ -45,6 +43,7 @@ class _SocialLoginButton extends StatelessWidget {
   }
 }
 
+// Trang đăng ký
 class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
 
@@ -69,8 +68,8 @@ class _SignUpPageState extends State<SignUpPage> {
     super.dispose();
   }
 
+  // Hàm xử lý đăng ký tài khoản
   Future<void> _signUp() async {
-    // ... (Logic Firebase Sign Up giữ nguyên)
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -78,7 +77,7 @@ class _SignUpPageState extends State<SignUpPage> {
 
     if (_passwordController.text != _confirmPasswordController.text) {
       setState(() {
-        _errorMessage = 'The confirmation password does not match.';
+        _errorMessage = 'Mật khẩu xác nhận không khớp.';
         _isLoading = false;
       });
       return;
@@ -92,7 +91,7 @@ class _SignUpPageState extends State<SignUpPage> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Registration successful! Please log in.')),
+          const SnackBar(content: Text('Đăng ký thành công! Vui lòng đăng nhập.')),
         );
         Navigator.of(context).pushReplacement(
             MaterialPageRoute(builder: (context) => const LoginPage()));
@@ -100,20 +99,22 @@ class _SignUpPageState extends State<SignUpPage> {
 
     } on FirebaseAuthException catch (e) {
       if (e.code == 'weak-password') {
-        _errorMessage = 'The password must be at least 6 characters long.';
+        _errorMessage = 'Mật khẩu phải có ít nhất 6 ký tự.';
       } else if (e.code == 'email-already-in-use') {
-        _errorMessage = 'This email is already in use.';
+        _errorMessage = 'Email này đã được sử dụng.';
       } else if (e.code == 'invalid-email') {
-        _errorMessage = 'The email format is invalid.';
+        _errorMessage = 'Định dạng email không hợp lệ.';
       } else {
-        _errorMessage = 'Sign up error: ${e.message}';
+        _errorMessage = 'Lỗi đăng ký: ${e.message}';
       }
     } catch (e) {
-      _errorMessage = 'An error occurred: $e';
+      _errorMessage = 'Đã có lỗi xảy ra: $e';
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -132,9 +133,9 @@ class _SignUpPageState extends State<SignUpPage> {
             children: <Widget>[
               const Spacer(flex: 1),
 
-              // 1. Title
+              // Tiêu đề
               const Text(
-                'Create Account',
+                'Tạo tài khoản',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: primaryColor,
@@ -144,9 +145,9 @@ class _SignUpPageState extends State<SignUpPage> {
               ),
               const SizedBox(height: 8),
 
-              // 2. Description
+              // Mô tả
               const Text(
-                'Create an account so you can explore all the existing jobs',
+                'Tạo tài khoản để khám phá các tính năng tuyệt vời của ứng dụng.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 16,
@@ -155,7 +156,7 @@ class _SignUpPageState extends State<SignUpPage> {
               ),
               const SizedBox(height: 40),
 
-              // 3. Email Input (Đã thêm Icon)
+              // Ô nhập Email
               TextField(
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
@@ -163,7 +164,6 @@ class _SignUpPageState extends State<SignUpPage> {
                   hintText: 'Email',
                   filled: true,
                   fillColor: inputFillColor,
-                  // THÊM ICON BẮT ĐẦU
                   prefixIcon: const Icon(Icons.email_outlined, color: primaryColor),
                   contentPadding: const EdgeInsets.symmetric(vertical: 18.0, horizontal: 20.0),
                   border: OutlineInputBorder(
@@ -182,61 +182,41 @@ class _SignUpPageState extends State<SignUpPage> {
               ),
               const SizedBox(height: 20),
 
-              // 4. Password Input (Đã thêm Icon)
+              // Ô nhập Mật khẩu
               TextField(
                 controller: _passwordController,
                 obscureText: true,
                 decoration: InputDecoration(
-                  hintText: 'Password',
+                  hintText: 'Mật khẩu',
                   filled: true,
                   fillColor: inputFillColor,
-                  // THÊM ICON BẮT ĐẦU
                   prefixIcon: const Icon(Icons.lock_outline, color: primaryColor),
                   contentPadding: const EdgeInsets.symmetric(vertical: 18.0, horizontal: 20.0),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12.0),
-                    borderSide: BorderSide.none,
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12.0),
-                    borderSide: BorderSide.none,
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12.0),
-                    borderSide: BorderSide.none,
-                  ),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.0), borderSide: BorderSide.none),
+                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12.0), borderSide: BorderSide.none),
+                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12.0), borderSide: BorderSide.none),
                 ),
               ),
               const SizedBox(height: 20),
 
-              // 5. Confirm Password Input (Đã thêm Icon)
+              // Ô xác nhận Mật khẩu
               TextField(
                 controller: _confirmPasswordController,
                 obscureText: true,
                 decoration: InputDecoration(
-                  hintText: 'Confirm Password',
+                  hintText: 'Xác nhận mật khẩu',
                   filled: true,
                   fillColor: inputFillColor,
-                  // THÊM ICON BẮT ĐẦU
                   prefixIcon: const Icon(Icons.verified_user_outlined, color: primaryColor),
                   contentPadding: const EdgeInsets.symmetric(vertical: 18.0, horizontal: 20.0),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12.0),
-                    borderSide: BorderSide.none,
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12.0),
-                    borderSide: BorderSide.none,
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12.0),
-                    borderSide: BorderSide.none,
-                  ),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.0), borderSide: BorderSide.none),
+                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12.0), borderSide: BorderSide.none),
+                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12.0), borderSide: BorderSide.none),
                 ),
               ),
               const SizedBox(height: 25),
 
-              // Error Message Display
+              // Hiển thị thông báo lỗi
               if (_errorMessage != null)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 10.0),
@@ -247,7 +227,7 @@ class _SignUpPageState extends State<SignUpPage> {
                   ),
                 ),
 
-              // 6. "Sign up" Button (Màu primaryColor mới)
+              // Nút Đăng ký
               SizedBox(
                 height: 55,
                 child: ElevatedButton(
@@ -262,7 +242,7 @@ class _SignUpPageState extends State<SignUpPage> {
                   child: _isLoading
                       ? const CircularProgressIndicator(color: Colors.white)
                       : const Text(
-                    'Sign up',
+                    'Đăng ký',
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -273,14 +253,14 @@ class _SignUpPageState extends State<SignUpPage> {
               ),
               const SizedBox(height: 25),
 
-              // 7. "Already have an account"
+              // Nút quay lại trang đăng nhập
               TextButton(
                 onPressed: () {
                   Navigator.of(context).pushReplacement(
                       MaterialPageRoute(builder: (context) => const LoginPage()));
                 },
                 child: const Text(
-                  'Already have an account',
+                  'Đã có tài khoản? Đăng nhập ngay',
                   style: TextStyle(
                     color: Colors.black54,
                     fontSize: 16,
@@ -289,9 +269,9 @@ class _SignUpPageState extends State<SignUpPage> {
               ),
               const SizedBox(height: 30),
 
-              // 8. "Or continue with" (Màu primaryColor mới)
+              // Chữ "Hoặc tiếp tục với"
               const Text(
-                'Or continue with',
+                'Hoặc tiếp tục với',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: primaryColor,
@@ -301,15 +281,13 @@ class _SignUpPageState extends State<SignUpPage> {
               ),
               const SizedBox(height: 20),
 
-              // 9. Social Login Buttons (Cần truyền primaryColor nếu muốn icon/border)
+              // Các nút đăng nhập mạng xã hội
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: <Widget>[
-                  _SocialLoginButton(icon: 'G', onTap: () {}, primaryColor: primaryColor),
+                  _SocialLoginButton(icon: 'G', onTap: () {}),
                   const SizedBox(width: 20),
-                  _SocialLoginButton(icon: 'f', onTap: () {}, primaryColor: primaryColor),
-                  const SizedBox(width: 20),
-                  _SocialLoginButton(icon: '', onTap: () {}, primaryColor: primaryColor),
+                  _SocialLoginButton(icon: 'f', onTap: () {}),
                 ],
               ),
             ],
