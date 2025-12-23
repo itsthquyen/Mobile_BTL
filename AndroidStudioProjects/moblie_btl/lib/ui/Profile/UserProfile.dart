@@ -1,103 +1,251 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:moblie_btl/ui/Profile/PictureUser.dart';
+import '../login/login_page.dart';
+import 'User.dart';
 
-// Import file edit_picture_options.dart (giả định nằm trong cùng thư mục)
-
-
-// Màu chủ đạo đã được định nghĩa ở các file khác
 const primaryColor = Color(0xFF153359);
 
-// Dữ liệu giả (Mock Data) để hiển thị trên giao diện
-// Sau này bạn sẽ thay thế bằng dữ liệu lấy từ Firebase Auth và Firestore.
-class MockUserProfile {
-  final String username = 'Nguyễn Văn A';
-  final String email = 'NVA@gmail.com';
-  final String phoneNumber = '0399999999';
-  const MockUserProfile();
-}
-
-class ProfilePage extends StatelessWidget {
+class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
 
-  // Hàm xử lý Log Out (Placeholder)
-  void _handleLogout(BuildContext context) {
-    // TODO: Triển khai logic đăng xuất Firebase
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Logging out...')),
+  @override
+  State<ProfilePage> createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends State<ProfilePage> {
+  UserProfile? userProfile;
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserProfile();
+  }
+
+  /// ===== LOAD USER =====
+  Future<void> _loadUserProfile() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final doc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .get();
+
+    if (doc.exists) {
+      setState(() {
+        userProfile = UserProfile.fromFirestore(doc.id, doc.data()!);
+        isLoading = false;
+      });
+    }
+  }
+
+  /// ===== UPDATE PROFILE =====
+  Future<void> _updateProfile(String name, String phone) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    if (name.isEmpty || phone.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Không được để trống thông tin')),
+      );
+      return;
+    }
+
+    await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .update({
+      'displayName': name,
+      'phone': phone,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+
+    setState(() {
+      userProfile = UserProfile(
+        uid: userProfile!.uid,
+        displayName: name,
+        email: userProfile!.email,
+        phone: phone,
+        avatarUrl: userProfile!.avatarUrl,
+      );
+    });
+
+    _showSuccessDialog();
+  }
+
+  /// ===== SUCCESS DIALOG (GIỮA MÀN HÌNH) =====
+  void _showSuccessDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      useRootNavigator: true,
+      builder: (_) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 25, horizontal: 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: const [
+                Icon(Icons.check_circle,
+                    color: Colors.green, size: 70),
+                SizedBox(height: 15),
+                Text(
+                  'Cập nhật thành công!',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    Future.delayed(const Duration(milliseconds: 1500), () {
+      if (mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
+      }
+    });
+  }
+
+  /// ===== EDIT PROFILE =====
+  void _showEditProfileDialog() {
+    final nameController =
+    TextEditingController(text: userProfile!.displayName);
+    final phoneController =
+    TextEditingController(text: userProfile!.phone);
+
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Chỉnh sửa thông tin'),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(15),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameController,
+              decoration: const InputDecoration(
+                labelText: 'Username',
+                prefixIcon: Icon(Icons.person),
+              ),
+            ),
+            const SizedBox(height: 15),
+            TextField(
+              controller: phoneController,
+              keyboardType: TextInputType.phone,
+              decoration: const InputDecoration(
+                labelText: 'Phone',
+                prefixIcon: Icon(Icons.phone),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Huỷ'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context); // đóng dialog chỉnh sửa trước
+              await _updateProfile(
+                nameController.text.trim(),
+                phoneController.text.trim(),
+              );
+            },
+            child: const Text('Lưu'),
+          ),
+        ],
+      ),
     );
   }
 
-  // --- HÀM MỚI: HIỂN THỊ MODAL EDIT PICTURE ---
+  /// ===== LOGOUT =====
+  Future<void> _handleLogout() async {
+    await FirebaseAuth.instance.signOut();
+    if (!mounted) return;
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => const LoginPage()),
+    );
+  }
+
+  /// ===== EDIT AVATAR =====
   void _showEditPictureOptions(BuildContext context) {
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20.0)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (BuildContext sheetContext) {
-        // Điều hướng đến widget chuyên biệt EditPictureOptions
-        return const EditPictureOptions();
-      },
+      builder: (_) => const EditPictureOptions(),
     );
   }
 
+  /// ================= BUILD =================
   @override
   Widget build(BuildContext context) {
-    const MockUserProfile user = MockUserProfile();
+    if (isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
 
     return Scaffold(
       backgroundColor: Colors.grey.shade100,
       body: SingleChildScrollView(
         child: Column(
-          children: <Widget>[
-            // 1. Header Card (Phần màu xanh đậm)
-            // Truyền user và context cho Header Card
-            _buildHeaderCard(context, user),
-
-            // 2. Danh sách Thông tin Cá nhân (Giữ nguyên)
+          children: [
+            _buildHeader(),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 20.0),
+              padding:
+              const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
               child: Column(
                 children: [
                   _ProfileInfoCard(
                     icon: Icons.person_outline,
                     label: 'Username',
-                    value: user.username,
+                    value: userProfile!.displayName,
                   ),
                   const SizedBox(height: 15),
                   _ProfileInfoCard(
                     icon: Icons.email_outlined,
                     label: 'Email',
-                    value: user.email,
+                    value: userProfile!.email,
                   ),
                   const SizedBox(height: 15),
                   _ProfileInfoCard(
                     icon: Icons.phone_outlined,
-                    label: 'Phone number',
-                    value: user.phoneNumber,
+                    label: 'Phone',
+                    value: userProfile!.phone,
                   ),
                   const SizedBox(height: 40),
-
-                  // 3. Nút Log Out (Giữ nguyên)
                   SizedBox(
                     width: double.infinity,
                     height: 55,
                     child: ElevatedButton(
-                      onPressed: () => _handleLogout(context),
+                      onPressed: _handleLogout,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: primaryColor,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12.0),
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                        elevation: 5,
                       ),
                       child: const Text(
                         'Log Out',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
+                        style:
+                        TextStyle(fontSize: 20, color: Colors.white),
                       ),
                     ),
                   ),
@@ -110,11 +258,10 @@ class ProfilePage extends StatelessWidget {
     );
   }
 
-  // CẬP NHẬT HÀM NÀY ĐỂ GÁN SỰ KIỆN onTap CHO NÚT BÚT CHÌ
-  Widget _buildHeaderCard(BuildContext context, MockUserProfile user) {
+  Widget _buildHeader() {
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.only(top: 50, bottom: 30, left: 20, right: 20),
+      padding:
+      const EdgeInsets.only(top: 50, bottom: 30, left: 20, right: 20),
       decoration: const BoxDecoration(
         color: primaryColor,
         borderRadius: BorderRadius.only(
@@ -123,79 +270,65 @@ class ProfilePage extends StatelessWidget {
         ),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          // Title và Greeting (Giữ nguyên)
-          const Text(
-            'Profile',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 32,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 5),
-          Text(
-            'Hi, ${user.username}!',
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 30),
-
-          // Avatar và Tên
-          Center(
-            child: Column(
-              children: [
-                // Avatar
-                Stack(
-                  children: [
-                    CircleAvatar(
-                      radius: 50,
-                      backgroundColor: Colors.white,
-                      child: CircleAvatar(
-                        radius: 48,
-                        backgroundColor: Colors.grey.shade300,
-                        backgroundImage: const AssetImage('assets/default_avatar.png'),
-                        child: user.username.isEmpty ? const Icon(Icons.person, size: 50, color: primaryColor) : null,
-                      ),
-                    ),
-                    // Nút chỉnh sửa
-                    Positioned(
-                      bottom: 0,
-                      right: 0,
-                      child: InkWell( // SỬ DỤNG InkWell ĐỂ BẮT SỰ KIỆN ONTAP
-                        onTap: () => _showEditPictureOptions(context), // GỌI HÀM HIỂN THỊ MODAL
-                        child: Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
-                            border: Border.all(color: primaryColor, width: 2),
-                          ),
-                          child: const Icon(
-                            Icons.edit_outlined,
-                            color: primaryColor,
-                            size: 16,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Profile',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
                 ),
-                const SizedBox(height: 10),
-                // Tên người dùng
-                Text(
-                  user.username,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w600,
+              ),
+              IconButton(
+                onPressed: _showEditProfileDialog,
+                icon: const Icon(Icons.edit, color: Colors.white),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Stack(
+            children: [
+              CircleAvatar(
+                radius: 50,
+                backgroundColor: Colors.white,
+                child: CircleAvatar(
+                  radius: 48,
+                  backgroundImage: userProfile!.avatarUrl.isNotEmpty
+                      ? NetworkImage(userProfile!.avatarUrl)
+                      : const AssetImage('assets/default_avatar.png')
+                  as ImageProvider,
+                ),
+              ),
+              Positioned(
+                bottom: 0,
+                right: 0,
+                child: InkWell(
+                  onTap: () => _showEditPictureOptions(context),
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      border:
+                      Border.all(color: primaryColor, width: 2),
+                    ),
+                    child: const Icon(Icons.camera_alt,
+                        size: 16, color: primaryColor),
                   ),
                 ),
-              ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            userProfile!.displayName,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],
@@ -204,9 +337,7 @@ class ProfilePage extends StatelessWidget {
   }
 }
 
-
-// --- Widget Dành riêng: Profile Info Card (Giữ nguyên) ---
-
+/// ================= INFO CARD =================
 class _ProfileInfoCard extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -223,35 +354,24 @@ class _ProfileInfoCard extends StatelessWidget {
     return Card(
       elevation: 3,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(15.0),
+        borderRadius: BorderRadius.circular(15),
       ),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 15.0),
+      child: Padding(
+        padding:
+        const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
         child: Row(
           children: [
-            // Icon
             Icon(icon, color: primaryColor),
             const SizedBox(width: 15),
-
-            // Label
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 16,
-                color: Colors.black87,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-
+            Text(label,
+                style: const TextStyle(
+                    fontSize: 16, fontWeight: FontWeight.w500)),
             const Spacer(),
-
-            // Value
             Text(
               value,
               style: TextStyle(
                 fontSize: 16,
                 color: Colors.black.withOpacity(0.7),
-                fontWeight: FontWeight.w400,
               ),
             ),
           ],

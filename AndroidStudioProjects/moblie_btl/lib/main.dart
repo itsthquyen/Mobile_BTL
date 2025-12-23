@@ -3,7 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'ui/login/login_page.dart'; // Import LoginPage
 
 void main() async {
-  // Đảm bảo Flutter widgets đã được khởi tạo
+  // Đảm bảo Flutter widgets đã được khởi tạog
   WidgetsFlutterBinding.ensureInitialized();
 
   // Khởi tạo Firebase

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:moblie_btl/ui/Home/TripSync_Page.dart';
 
+import 'forgot_password_page.dart';
 import 'signup_page.dart';
 
 // Thay đổi mã màu chính (Primary Color)
@@ -223,7 +224,10 @@ class _LoginPageState extends State<LoginPage> {
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
-                  onPressed: () {},
+                  onPressed: () {
+                    Navigator.of(context).push(
+                        MaterialPageRoute(builder: (context) => const ForgotPasswordPage()));
+                  },
                   child: const Text(
                     'Forgot your password?',
                     style: TextStyle(color: primaryColor),
