@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:moblie_btl/ui/Home/TripDetails/schedule_tab.dart';
+import 'package:moblie_btl/model/trip.dart'; // Import Trip model chính
 
 // Import các file cần thiết
 import 'CheckList/checklist_tab.dart';
@@ -12,12 +13,7 @@ import 'add_schedule.dart';
 import './Expenses/expense_fund_container.dart';
 import './Expenses/expense_page.dart';
 
-class Trip {
-  final String title;
-  final String subtitle;
-  final String imageUrl;
-  Trip({required this.title, required this.subtitle, required this.imageUrl});
-}
+// ĐÃ XÓA CLASS TRIP CỤC BỘ
 
 const Color mainBlueColor = Color(0xFF153359);
 const Color accentGoldColor = Color(0xFFEAD8B1);
@@ -57,7 +53,7 @@ class _TripDetailsPageState extends State<TripDetailsPage> {
                       colors: [
                         const Color(0xFFE8ECF2),
                         const Color(0xFF8DA0C1),
-                        mainBlueColor.withOpacity(0.8),
+                        mainBlueColor.withOpacity(0.8), // Bạn có thể thay bằng withValues nếu muốn
                         mainBlueColor,
                       ],
                       stops: const [0.0, 0.3, 0.7, 1.0],
@@ -102,8 +98,6 @@ class _TripDetailsPageState extends State<TripDetailsPage> {
         return const Center(child: Text('Content Placeholder', style: TextStyle(color: Colors.white)));
     }
   }
-
-
 
   void _showAddExpenseModal(BuildContext context) {
     showModalBottomSheet(
@@ -203,7 +197,7 @@ class _TripDetailsPageState extends State<TripDetailsPage> {
           ),
           const SizedBox(height: 10),
           Text(
-            widget.trip.title,
+            widget.trip.name, // SỬA: title -> name
             style: const TextStyle(
               color: Colors.white,
               fontSize: 24,
@@ -303,4 +297,3 @@ class _TripDetailsPageState extends State<TripDetailsPage> {
     );
   }
 }
-

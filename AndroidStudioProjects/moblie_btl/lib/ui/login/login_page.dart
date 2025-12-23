@@ -2,16 +2,18 @@
 
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:moblie_btl/ui/Home/TripSync_Page.dart';
+import 'package:moblie_btl/ui/onboarding/onboarding_page.dart';
 
 import 'forgot_password_page.dart';
 import 'signup_page.dart';
 
-// Thay đổi mã màu chính (Primary Color)
-const primaryColor = Color(0xFF153359); // Màu mới: 153359
+// --- CÁC HẰNG SỐ MÀU ---
+const primaryColor = Color(0xFF153359);
 const inputFillColor = Color(0xFFF0F0FF);
 
-// Social Login Button Widget (Giữ nguyên)
+// --- WIDGET NÚT ĐĂNG NHẬP MẠNG XÃ HỘI ---
 class _SocialLoginButton extends StatelessWidget {
   final String icon;
   final VoidCallback onTap;
@@ -25,7 +27,6 @@ class _SocialLoginButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // ... (Code Widget này giữ nguyên)
     return InkWell(
       onTap: onTap,
       child: Container(
@@ -52,7 +53,7 @@ class _SocialLoginButton extends StatelessWidget {
   }
 }
 
-// LOGIN PAGE
+// --- TRANG ĐĂNG NHẬP CHÍNH ---
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
@@ -75,45 +76,70 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
+  // --- HÀM KIỂM TRA NGƯỜI DÙNG MỚI ---
+  Future<bool> _checkIfNewUser(User user) async {
+    try {
+      final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+      return !doc.exists; // Nếu document KHÔNG tồn tại => là người dùng mới
+    } catch (e) {
+      // Nếu có lỗi, coi như là người dùng cũ để tránh bị kẹt
+      return false;
+    }
+  }
+
+  // --- HÀM XỬ LÝ ĐĂNG NHẬP ---
   Future<void> _signIn() async {
-    // ... (Logic Firebase Sign In giữ nguyên)
     setState(() {
       _isLoading = true;
       _errorMessage = null;
     });
 
     try {
-      await _auth.signInWithEmailAndPassword(
+      final credential = await _auth.signInWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
-
-      if (mounted) {
-        Navigator.of(context).pushReplacement( // Dùng pushReplacement
-          MaterialPageRoute(builder: (context) => const TripsyncPage()), // Chuyển đến HomePage
+      
+      final user = credential.user;
+      if (user == null || !mounted) return;
+      
+      // KIỂM TRA NGƯỜI DÙNG MỚI HAY CŨ
+      final isNew = await _checkIfNewUser(user);
+      
+      if (isNew) {
+        // Chuyển đến Onboarding nếu là người dùng mới
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const OnboardingPage()), 
+        );
+      } else {
+        // Chuyển đến Trang chủ nếu là người dùng cũ
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const TripsyncPage()),
         );
       }
 
     } on FirebaseAuthException catch (e) {
       if (e.code == 'invalid-credential') {
-        _errorMessage = 'Incorrect email or password.';
+        _errorMessage = 'Sai email hoặc mật khẩu.';
       } else if (e.code == 'user-disabled') {
-        _errorMessage = 'This account has been disabled.';
+        _errorMessage = 'Tài khoản này đã bị khóa.';
       } else if (e.code == 'invalid-email') {
-        _errorMessage = 'The email format is invalid.';
+        _errorMessage = 'Định dạng email không hợp lệ.';
       } else {
-        _errorMessage = 'Login error: ${e.message}';
+        _errorMessage = 'Lỗi đăng nhập: ${e.message}';
       }
     } catch (e) {
-      _errorMessage = 'An error occurred: $e';
+      _errorMessage = 'Đã có lỗi xảy ra: $e';
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
-  // --- UI Build method ---
+  // --- PHƯƠNG THỨC BUILD GIAO DIỆN ---
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
@@ -129,9 +155,8 @@ class _LoginPageState extends State<LoginPage> {
             children: <Widget>[
               const Spacer(flex: 1),
 
-              // 1. Title (Màu primaryColor mới)
               Text(
-                'Login here',
+                'Đăng nhập', // Sửa: Login here -> Đăng nhập
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: primaryColor,
@@ -141,9 +166,8 @@ class _LoginPageState extends State<LoginPage> {
               ),
               const SizedBox(height: 8),
 
-              // 2. Welcome Message
               const Text(
-                'Welcome back you\'ve been missed!',
+                'Chào mừng bạn đã quay trở lại!', // Sửa Welcome message
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 18,
@@ -153,7 +177,7 @@ class _LoginPageState extends State<LoginPage> {
               ),
               const SizedBox(height: 40),
 
-              // 3. Email Input (Đã thêm Icon)
+              // Input Email
               TextField(
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
@@ -161,10 +185,8 @@ class _LoginPageState extends State<LoginPage> {
                   hintText: 'Email',
                   filled: true,
                   fillColor: inputFillColor,
-                  // THÊM ICON BẮT ĐẦU
                   prefixIcon: const Icon(Icons.email_outlined, color: primaryColor),
-                  contentPadding: const EdgeInsets.symmetric(
-                      vertical: 18.0, horizontal: 20.0),
+                  contentPadding: const EdgeInsets.symmetric(vertical: 18.0, horizontal: 20.0),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12.0),
                     borderSide: BorderSide(color: primaryColor.withOpacity(0.5), width: 1.5),
@@ -181,35 +203,24 @@ class _LoginPageState extends State<LoginPage> {
               ),
               const SizedBox(height: 20),
 
-              // 4. Password Input (Đã thêm Icon)
+              // Input Mật khẩu
               TextField(
                 controller: _passwordController,
                 obscureText: true,
                 decoration: InputDecoration(
-                  hintText: 'Password',
+                  hintText: 'Mật khẩu',
                   filled: true,
                   fillColor: inputFillColor,
-                  // THÊM ICON BẮT ĐẦU
                   prefixIcon: const Icon(Icons.lock_outline, color: primaryColor),
-                  contentPadding: const EdgeInsets.symmetric(
-                      vertical: 18.0, horizontal: 20.0),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12.0),
-                    borderSide: BorderSide.none,
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12.0),
-                    borderSide: BorderSide.none,
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12.0),
-                    borderSide: BorderSide.none,
-                  ),
+                  contentPadding: const EdgeInsets.symmetric(vertical: 18.0, horizontal: 20.0),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.0), borderSide: BorderSide.none),
+                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12.0), borderSide: BorderSide.none),
+                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12.0), borderSide: BorderSide.none),
                 ),
               ),
               const SizedBox(height: 10),
 
-              // Error Message Display
+              // Hiển thị thông báo lỗi
               if (_errorMessage != null)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 10.0),
@@ -220,77 +231,60 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                 ),
 
-              // 5. "Forgot your password?"
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
                   onPressed: () {
-                    Navigator.of(context).push(
-                        MaterialPageRoute(builder: (context) => const ForgotPasswordPage()));
+                    Navigator.of(context).push(MaterialPageRoute(builder: (context) => const ForgotPasswordPage()));
                   },
                   child: const Text(
-                    'Forgot your password?',
+                    'Quên mật khẩu?', // Sửa: Forgot your password? -> Quên mật khẩu?
                     style: TextStyle(color: primaryColor),
                   ),
                 ),
               ),
               const SizedBox(height: 20),
 
-              // 6. "Sign in" Button (Màu primaryColor mới)
+              // Nút Đăng nhập
               SizedBox(
                 height: 55,
                 child: ElevatedButton(
                   onPressed: _isLoading ? null : _signIn,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: primaryColor,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12.0),
-                    ),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
                     elevation: 5,
                   ),
                   child: _isLoading
                       ? const CircularProgressIndicator(color: Colors.white)
                       : const Text(
-                    'Sign in',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
+                    'Đăng nhập', // Sửa: Sign in -> Đăng nhập
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
                   ),
                 ),
               ),
               const SizedBox(height: 25),
 
-              // 7. "Create new account"
+              // Nút Tạo tài khoản mới
               TextButton(
                 onPressed: () {
-                  Navigator.of(context).push(
-                      MaterialPageRoute(builder: (context) => const SignUpPage()));
+                  Navigator.of(context).push(MaterialPageRoute(builder: (context) => const SignUpPage()));
                 },
                 child: const Text(
-                  'Create new account',
-                  style: TextStyle(
-                    color: Colors.black54,
-                    fontSize: 16,
-                  ),
+                  'Tạo tài khoản mới', // Sửa: Create new account -> Tạo tài khoản mới
+                  style: TextStyle(color: Colors.black54, fontSize: 16),
                 ),
               ),
               const SizedBox(height: 30),
 
-              // 8. "Or continue with" (Màu primaryColor mới)
               const Text(
-                'Or continue with',
+                'Hoặc tiếp tục với', // Sửa: Or continue with
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: primaryColor,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
+                style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold, fontSize: 16),
               ),
               const SizedBox(height: 20),
 
-              // 9. Social Login Buttons
+              // Các nút đăng nhập mạng xã hội
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: <Widget>[

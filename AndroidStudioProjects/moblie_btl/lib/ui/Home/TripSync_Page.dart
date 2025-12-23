@@ -1,14 +1,15 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'dart:math'; // Import để dùng hàm Random
 import 'package:moblie_btl/ui/Identify/Identify_page.dart';
 import 'package:moblie_btl/ui/Notifications/Notifications_page.dart';
 import 'package:moblie_btl/ui/Profile/UserProfile.dart';
 import 'package:moblie_btl/ui/Home/TripDetails/trip_details.dart';
 import 'package:moblie_btl/ui/Home/new_Trip/new_Trip.dart';
-
+import '../../model/trip.dart';
 
 const primaryColor = Color(0xFF153359);
-
-
 
 class TripsyncPage extends StatefulWidget {
   const TripsyncPage({super.key});
@@ -37,7 +38,6 @@ class _TripsyncPageState extends State<TripsyncPage> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(25.0)),
       ),
       builder: (BuildContext context) {
-        // Tên NewTripOptionsModal giả định là đúng
         return const NewTripOptionsModal();
       },
     );
@@ -101,142 +101,240 @@ class _TripsyncPageState extends State<TripsyncPage> {
   }
 }
 
-
 // ************ TRIPSYNC CONTENT PAGE ***********
 
 class TripSyncContentPage extends StatelessWidget {
   const TripSyncContentPage({super.key});
 
+  /// ===== LOAD ALL TRIPS (Để chia thành My Trips & Discovery) =====
+  Stream<List<Trip>> _getAllTrips() {
+    // Tăng limit lên 50 để có nhiều lựa chọn ngẫu nhiên hơn
+    return FirebaseFirestore.instance
+        .collection('trips')
+        // .orderBy('startDate', descending: true) // Bật lại khi đã tạo Index
+        .limit(50) 
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs
+          .map((doc) => Trip.fromFirestore(doc.id, doc.data()))
+          .toList();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    final currentTrip = Trip(
-      title: 'Ha Long Bay',
-      subtitle: 'This is a sample tricount',
-      imageUrl: 'https://picsum.photos/400/200?random=1',
-    );
+    final user = FirebaseAuth.instance.currentUser;
 
-    return SingleChildScrollView(
-      child: Column(
-        children: [
-          // Header
-          Container(
-            height: 180,
-            width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(20, 50, 20, 20),
-            decoration: const BoxDecoration(color: primaryColor),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Column(
+    return StreamBuilder<List<Trip>>(
+      stream: _getAllTrips(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(body: Center(child: CircularProgressIndicator()));
+        }
+
+        if (snapshot.hasError) {
+           return const Scaffold(body: Center(child: Text("Loading trips..."))); 
+        }
+
+        final allTrips = snapshot.data ?? [];
+        
+        // --- PHÂN LOẠI TRIPS ---
+        final String uid = user?.uid ?? "";
+        final String email = user?.email ?? ""; // Lấy cả email để check
+        
+        // 1. My Trips: User có trong list (bằng UID hoặc Email)
+        final myTrips = allTrips.where((trip) {
+          return trip.members.containsKey(uid) || trip.members.containsKey(email);
+        }).toList();
+        
+        // 2. Discovery Trips: User KHÔNG có trong list
+        final discoveryTrips = allTrips.where((trip) {
+          return !trip.members.containsKey(uid) && !trip.members.containsKey(email);
+        }).toList();
+
+        // TRỘN NGẪU NHIÊN danh sách Discovery
+        discoveryTrips.shuffle(); 
+
+        return SingleChildScrollView(
+          child: Column(
+            children: [
+              // Header
+              _buildHeader(),
+
+              // === PHẦN 1: KHÁM PHÁ / NGẪU NHIÊN (SLIDER/PAGEVIEW) ===
+              Transform.translate(
+                offset: const Offset(0, -60),
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('TripSync', style: TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold)),
-                    SizedBox(height: 5),
-                    Text('Hi, Hoang! 👋', style: TextStyle(color: Colors.white70, fontSize: 18, fontWeight: FontWeight.w500)),
+                    const Padding(
+                      padding: EdgeInsets.only(bottom: 8.0, left: 24),
+                      child: Text(
+                        "Explore new journeys ✨",
+                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    
+                    if (discoveryTrips.isNotEmpty)
+                      SizedBox(
+                        height: 320, // Chiều cao cho PageView
+                        child: PageView.builder(
+                          controller: PageController(viewportFraction: 0.85), // Hiển thị 1 phần card sau
+                          itemCount: discoveryTrips.length,
+                          itemBuilder: (context, index) {
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 15.0), // Khoảng cách giữa các card
+                              child: _buildTripCard(
+                                context: context,
+                                trip: discoveryTrips[index],
+                              ),
+                            );
+                          },
+                        ),
+                      )
+                    else 
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                        child: _buildEmptyDiscoveryCard(),
+                      ),
                   ],
                 ),
-                CircleAvatar(
-                  radius: 20,
-                  backgroundColor: Colors.grey.shade300,
-                  backgroundImage: const NetworkImage('https://picsum.photos/50/50?random=2'),
-                ),
-              ],
-            ),
-          ),
-
-          // Current Trip Card (Bắt sự kiện nhấn)
-          Transform.translate(
-            offset: const Offset(0, -60),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20.0),
-              child: _buildTripCard(
-                context: context,
-                trip: currentTrip,
               ),
-            ),
+
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Pager Indicator (Chỉ hiển thị tượng trưng nếu có nhiều hơn 1 trang)
+                    if (discoveryTrips.length > 1)
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: List.generate(min(5, discoveryTrips.length), (index) {
+                          return Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 4.0),
+                            width: 8.0,
+                            height: 8.0,
+                            decoration: BoxDecoration(
+                              color: index == 0 ? primaryColor : Colors.grey.shade300,
+                              shape: BoxShape.circle,
+                            ),
+                          );
+                        }),
+                      ),
+                    
+                    const SizedBox(height: 30),
+
+                    // === PHẦN 2: MY TRIPS (CỦA TÔI) ===
+                    const Text(
+                      'My Trips',
+                      style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: primaryColor),
+                    ),
+                    const SizedBox(height: 15),
+
+                    if (myTrips.isNotEmpty)
+                      SizedBox(
+                        height: 180,
+                        child: ListView.separated(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: myTrips.length,
+                          separatorBuilder: (_,__) => const SizedBox(width: 15),
+                          itemBuilder: (context, index) {
+                            return _buildMiniTripCard(
+                              context: context,
+                              trip: myTrips[index],
+                            );
+                          },
+                        ),
+                      )
+                    else
+                       _buildEmptyMyTrips(),
+
+                    const SizedBox(height: 150),
+                  ],
+                ),
+              ),
+            ],
           ),
+        );
+      },
+    );
+  }
 
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Pager Indicator
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(5, (index) {
-                    return Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 4.0),
-                      width: 8.0,
-                      height: 8.0,
-                      decoration: BoxDecoration(
-                        color: index == 0 ? primaryColor : Colors.grey.shade300,
-                        shape: BoxShape.circle,
-                      ),
-                    );
-                  }),
-                ),
-                const SizedBox(height: 30),
+  Widget _buildEmptyDiscoveryCard() {
+    return Container(
+      height: 200,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10)],
+      ),
+      child: const Center(
+        child: Text("No trips to discover yet!", style: TextStyle(color: Colors.grey)),
+      ),
+    );
+  }
+  
+  Widget _buildEmptyMyTrips() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: Colors.grey.shade200)
+      ),
+      child: Column(
+        children: const [
+          Icon(Icons.luggage, size: 40, color: Colors.grey),
+          SizedBox(height: 10),
+          Text(
+            "You haven't joined any trips yet.",
+            style: TextStyle(color: Colors.grey),
+          ),
+          Text(
+            "Click (+) to create one!",
+             style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold),
+          )
+        ],
+      ),
+    );
+  }
 
-                // Tiêu đề cho My Trips
-                const Text(
-                  'My Trips',
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: primaryColor),
-                ),
-                const SizedBox(height: 15),
-
-                // Danh sách My Trips (ListView ngang)
-                SizedBox(
-                  height: 180,
-                  child: ListView(
-                    scrollDirection: Axis.horizontal,
-                    children: [
-                      // *** ĐÃ THÊM TRUYỀN context ***
-                      _buildMiniTripCard(
-                        context: context,
-                        title: 'Japan 2024',
-                        date: '12-19 Dec',
-                        memberCount: 4,
-                        imageColor: Colors.teal,
-                      ),
-                      const SizedBox(width: 15),
-                      _buildMiniTripCard(
-                        context: context,
-                        title: 'Da Lat Weekend',
-                        date: '05-07 Nov',
-                        memberCount: 2,
-                        imageColor: Colors.deepOrange,
-                      ),
-                      const SizedBox(width: 15),
-                      _buildMiniTripCard(
-                        context: context,
-                        title: 'Singapore',
-                        date: '30-05 May',
-                        memberCount: 5,
-                        imageColor: Colors.purple,
-                      ),
-                      const SizedBox(width: 15),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 150),
-              ],
-            ),
+  Widget _buildHeader() {
+    return Container(
+      height: 220, 
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(20, 50, 20, 20),
+      decoration: const BoxDecoration(color: primaryColor),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('TripSync', style: TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold)),
+              SizedBox(height: 5),
+              Text('Discover & Join 🌏', style: TextStyle(color: Colors.white70, fontSize: 18, fontWeight: FontWeight.w500)),
+            ],
+          ),
+          CircleAvatar(
+            radius: 20,
+            backgroundColor: Colors.grey.shade300,
+            backgroundImage: const NetworkImage('https://picsum.photos/50/50?random=2'),
           ),
         ],
       ),
     );
   }
 
-  // --- Widget Card Chuyến Đi Lớn (Current Trip) ---
+  // --- Widget Card Chuyến Đi Lớn (Discovery Trip) ---
   Widget _buildTripCard({required BuildContext context, required Trip trip}) {
-    // Tên TripDetailsPage giả định là đúng
     return Card(
       elevation: 10,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      child: InkWell( // BẮT SỰ KIỆN NHẤN ĐỂ ĐIỀU HƯỚNG
+      child: InkWell( 
         borderRadius: BorderRadius.circular(20),
         onTap: () {
           Navigator.of(context).push(
@@ -251,8 +349,11 @@ class TripSyncContentPage extends StatelessWidget {
             ClipRRect(
               borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
               child: Image.network(
-                trip.imageUrl,
+                trip.coverUrl,
                 fit: BoxFit.cover, height: 200, width: double.infinity,
+                errorBuilder: (context, error, stackTrace) => Container(
+                  height: 200, color: Colors.grey[300], child: const Icon(Icons.broken_image),
+                ),
               ),
             ),
             Padding(
@@ -260,9 +361,15 @@ class TripSyncContentPage extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(trip.title, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: primaryColor)),
+                  Text(trip.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: primaryColor)),
                   const SizedBox(height: 4),
-                  Text(trip.subtitle, style: const TextStyle(fontSize: 16, color: Colors.grey)),
+                  Row(
+                    children: [
+                       const Icon(Icons.person, size: 16, color: Colors.grey),
+                       const SizedBox(width: 4),
+                       Text('${trip.memberCount} members', style: const TextStyle(fontSize: 16, color: Colors.grey)),
+                    ],
+                  ),
                   const SizedBox(height: 15),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -290,27 +397,15 @@ class TripSyncContentPage extends StatelessWidget {
     );
   }
 
-  // --- Widget Card Chuyến Đi Nhỏ cho My Trips ---
   Widget _buildMiniTripCard({
-    required BuildContext context, // *** ĐÃ THÊM CONTEXT ĐỂ ĐIỀU HƯỚNG ***
-    required String title,
-    required String date,
-    required int memberCount,
-    required Color imageColor,
+    required BuildContext context,
+    required Trip trip,
   }) {
-    // *** TẠO TRIP MODEL TẠM THỜI CHO THẺ NHỎ ***
-    final miniTrip = Trip(
-      title: title,
-      subtitle: '$date - $memberCount members',
-      imageUrl: 'https://picsum.photos/150/80?random=${title.length}',
-    );
-
     return InkWell(
       onTap: () {
-        // ĐIỀU HƯỚNG ĐẾN MÀN HÌNH CHI TIẾT
         Navigator.of(context).push(
           MaterialPageRoute(
-            builder: (ctx) => TripDetailsPage(trip: miniTrip),
+            builder: (ctx) => TripDetailsPage(trip: trip),
           ),
         );
       },
@@ -322,7 +417,7 @@ class TripSyncContentPage extends StatelessWidget {
           borderRadius: BorderRadius.circular(15),
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withAlpha(26),
+              color: Colors.grey.withAlpha(26), 
               spreadRadius: 2,
               blurRadius: 5,
               offset: const Offset(0, 3),
@@ -332,39 +427,37 @@ class TripSyncContentPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Phần hình ảnh/màu sắc tượng trưng
             Container(
               height: 80,
               decoration: BoxDecoration(
-                color: imageColor,
+                color: Colors.teal, 
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
                 image: DecorationImage(
-                  image: NetworkImage(miniTrip.imageUrl),
+                  image: NetworkImage(trip.coverUrl),
                   fit: BoxFit.cover,
-                  colorFilter: ColorFilter.mode(imageColor.withAlpha(77), BlendMode.dstATop),
+                  colorFilter: ColorFilter.mode(Colors.teal.withAlpha(77), BlendMode.dstATop),
                 ),
               ),
             ),
-            // Phần thông tin chuyến đi
             Padding(
               padding: const EdgeInsets.all(10.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    title,
+                    trip.name,
                     style: const TextStyle(fontWeight: FontWeight.bold, color: primaryColor, fontSize: 16),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
-                  Text(date, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                  const Text('Joined', style: TextStyle(fontSize: 12, color: Colors.green, fontWeight: FontWeight.bold)), 
                   const SizedBox(height: 8),
                   Row(
                     children: [
                       const Icon(Icons.group, size: 14, color: Colors.grey),
                       const SizedBox(width: 4),
-                      Text('$memberCount members', style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                      Text('${trip.memberCount}', style: const TextStyle(fontSize: 12, color: Colors.grey)),
                     ],
                   ),
                 ],

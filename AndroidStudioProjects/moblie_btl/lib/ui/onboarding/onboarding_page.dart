@@ -1,24 +1,7 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 
-
-import '../profile-user/create_profile_page.dart'; // Thay đổi import
-
-// HomePage được định nghĩa ở đây để code có thể chạy
-// Bạn sẽ thay thế nó bằng file trang chủ thật của mình
-class HomePage extends StatelessWidget {
-  const HomePage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text("Trang Chủ")),
-      body: const Center(child: Text("Chào mừng đến với ứng dụng!")),
-    );
-  }
-}
+import '../profile-user/create_profile_page.dart';
 
 // Dữ liệu cho các màn hình onboarding
 class OnboardingInfo {
@@ -42,7 +25,7 @@ class OnboardingPage extends StatefulWidget {
 
 class _OnboardingPageState extends State<OnboardingPage> {
   final controller = PageController();
-  int _currentPageIndex = 0; // Dùng để theo dõi trang hiện tại
+  int _currentPageIndex = 0;
 
   final List<OnboardingInfo> onboardingData = [
     OnboardingInfo(
@@ -78,25 +61,13 @@ class _OnboardingPageState extends State<OnboardingPage> {
     super.dispose();
   }
 
-  Future<void> _onDone() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
-
-    try {
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .update({'hasSeenOnboarding': true});
-
-      if (mounted) {
-        // Chuyển đến trang tạo hồ sơ
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const CreateProfilePage()),
-        );
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Lỗi lưu trạng thái: $e")),
+  // --- SỬA LỖI: Chỉ chuyển trang, không tương tác CSDL ---
+  void _onDone() {
+    // Việc tạo document user sẽ do CreateProfilePage đảm nhiệm.
+    // Ở đây, chúng ta chỉ cần chuyển hướng.
+    if (mounted) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => const CreateProfilePage()),
       );
     }
   }
@@ -106,7 +77,6 @@ class _OnboardingPageState extends State<OnboardingPage> {
     return Scaffold(
       body: Stack(
         children: [
-          // Lớp 1: Nền Gradient và Ảnh
           Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
@@ -116,13 +86,11 @@ class _OnboardingPageState extends State<OnboardingPage> {
               ),
             ),
           ),
-          // Lớp 2: Nội dung chính
           SafeArea(
             child: Column(
               children: [
                 Expanded(
                   child: PageView.builder(
-                    // Vô hiệu hóa vuốt
                     physics: const NeverScrollableScrollPhysics(),
                     controller: controller,
                     itemCount: onboardingData.length,
@@ -159,7 +127,6 @@ class _OnboardingPageState extends State<OnboardingPage> {
                               ),
                             ),
                           ),
-                          // Chỉ hiển thị tên App ở trang đầu tiên
                           if (index == 0) ...[
                             const SizedBox(height: 60),
                             const Text(
@@ -186,7 +153,6 @@ class _OnboardingPageState extends State<OnboardingPage> {
                     },
                   ),
                 ),
-                // Phần giao diện dưới cùng
                 Container(
                   padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
                   child: Column(
@@ -204,7 +170,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                       ),
                       const SizedBox(height: 24),
                       SizedBox(
-                        width: double.infinity, // Nút rộng hết cỡ
+                        width: double.infinity,
                         height: 50,
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
@@ -239,7 +205,6 @@ class _OnboardingPageState extends State<OnboardingPage> {
               ],
             ),
           ),
-          // Lớp 4: Nút quay lại (chỉ hiện từ trang thứ 2)
           if (_currentPageIndex > 0)
             Positioned(
               top: 40,
