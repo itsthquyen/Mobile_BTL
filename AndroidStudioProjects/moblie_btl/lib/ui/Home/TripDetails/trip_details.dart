@@ -215,7 +215,7 @@ class _TripDetailsPageState extends State<TripDetailsPage> {
       case 0:
         return ScheduleTabContent(tripId: widget.trip.id);
       case 1:
-        return const ExpensesTabContent();
+        return ExpensesTabContent(tripId: widget.trip.id);
       case 2:
         return const ChecklistTabContent();
       case 3:
@@ -245,9 +245,9 @@ class _TripDetailsPageState extends State<TripDetailsPage> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) {
-        return const FractionallySizedBox(
+        return FractionallySizedBox(
           heightFactor: 0.9,
-          child: ExpenseFundContainer(),
+          child: ExpenseFundContainer(tripId: widget.trip.id),
         );
       },
     );

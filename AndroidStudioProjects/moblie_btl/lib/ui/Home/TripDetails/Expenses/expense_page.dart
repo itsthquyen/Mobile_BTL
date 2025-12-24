@@ -1,4 +1,7 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 // ********************************************
 // ******* 1. ĐỊNH NGHĨA MÀU SẮC & DATA *******
@@ -9,44 +12,134 @@ const Color expenseCardColor = Color(0xFF2C436D);
 // ********************************************
 // ******** 2. WIDGET NỘI DUNG TAB EXPENSES ****
 // ********************************************
-class ExpensesTabContent extends StatelessWidget {
-  const ExpensesTabContent({super.key});
+class ExpensesTabContent extends StatefulWidget {
+  final String tripId;
+  const ExpensesTabContent({super.key, required this.tripId});
+
+  @override
+  State<ExpensesTabContent> createState() => _ExpensesTabContentState();
+}
+
+class _ExpensesTabContentState extends State<ExpensesTabContent> {
+  // Cache user names to avoid repeated fetch
+  final Map<String, String> _userNames = {};
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 20.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: 20),
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('trips')
+          .doc(widget.tripId)
+          .collection('expenses')
+          .snapshots(),
+      builder: (context, expensesSnapshot) {
+        return StreamBuilder<QuerySnapshot>(
+          stream: FirebaseFirestore.instance
+              .collection('trips')
+              .doc(widget.tripId)
+              .collection('funds')
+              .snapshots(),
+          builder: (context, fundsSnapshot) {
+            if (expensesSnapshot.hasError || fundsSnapshot.hasError) {
+              return const Center(child: Text('Error loading data', style: TextStyle(color: Colors.white)));
+            }
 
-          _buildSummaryCard(), // Thẻ tóm tắt tài chính
+            if (!expensesSnapshot.hasData || !fundsSnapshot.hasData) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-          const SizedBox(height: 20),
+            final expensesDocs = expensesSnapshot.data!.docs;
+            final fundsDocs = fundsSnapshot.data!.docs;
 
-          // Tiêu đề Today
-          const Text(
-            'Today',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.white70,
-            ),
-          ),
+            // Calculate totals
+            double totalExpenses = 0;
+            for (var doc in expensesDocs) {
+              final data = doc.data() as Map<String, dynamic>;
+              totalExpenses += (data['amount'] as num?)?.toDouble() ?? 0;
+            }
 
-          const SizedBox(height: 10),
+            double totalFunds = 0;
+            for (var doc in fundsDocs) {
+              final data = doc.data() as Map<String, dynamic>;
+              totalFunds += (data['amount'] as num?)?.toDouble() ?? 0;
+            }
 
-          _buildExpenseList(), // Danh sách các khoản chi tiêu
+            double remainingBalance = totalFunds - totalExpenses;
 
-          const SizedBox(height: 100), // Khoảng trống cho FAB
-        ],
-      ),
+            // Merge and sort items
+            List<Map<String, dynamic>> items = [];
+
+            for (var doc in expensesDocs) {
+              final data = doc.data() as Map<String, dynamic>;
+              items.add({
+                'id': doc.id,
+                'name': data['title'] ?? 'Expense',
+                'payerId': data['payerId'],
+                'amount': (data['amount'] as num?)?.toDouble() ?? 0,
+                'date': (data['date'] as Timestamp?)?.toDate(),
+                'isExpense': true,
+              });
+            }
+
+            for (var doc in fundsDocs) {
+              final data = doc.data() as Map<String, dynamic>;
+              items.add({
+                'id': doc.id,
+                'name': (data['note'] != null && data['note'].toString().isNotEmpty) ? data['note'] : 'Fund Contribution',
+                'userId': data['userId'],
+                'amount': (data['amount'] as num?)?.toDouble() ?? 0,
+                'date': (data['date'] as Timestamp?)?.toDate(),
+                'isExpense': false,
+              });
+            }
+
+            // Sort by date descending
+            items.sort((a, b) {
+              DateTime da = a['date'] ?? DateTime(1970);
+              DateTime db = b['date'] ?? DateTime(1970);
+              return db.compareTo(da);
+            });
+
+            return SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 20.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 20),
+
+                  _buildSummaryCard(remainingBalance, totalFunds),
+
+                  const SizedBox(height: 20),
+
+                  // Header
+                  if (items.isNotEmpty)
+                    const Text(
+                      'Recent Activity',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white70,
+                      ),
+                    ),
+
+                  const SizedBox(height: 10),
+
+                  _buildTransactionList(items),
+
+                  const SizedBox(height: 100), // Khoảng trống cho FAB
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
   // Widget Thẻ Tóm Tắt Tài Chính
-  Widget _buildSummaryCard() {
+  Widget _buildSummaryCard(double remaining, double totalFund) {
+    final currencyFormat = NumberFormat.currency(locale: 'vi_VN', symbol: '₫', decimalDigits: 0);
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -67,15 +160,15 @@ class ExpensesTabContent extends StatelessWidget {
           // Remaining balance
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: const [
-              Text(
+            children: [
+              const Text(
                 'Remaining balance',
                 style: TextStyle(fontSize: 14, color: Colors.white70),
               ),
-              SizedBox(height: 5),
+              const SizedBox(height: 5),
               Text(
-                '₫ 4.800.000',
-                style: TextStyle(
+                currencyFormat.format(remaining),
+                style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
@@ -87,15 +180,15 @@ class ExpensesTabContent extends StatelessWidget {
           // Fund
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
-            children: const [
-              Text(
+            children: [
+              const Text(
                 'Fund',
                 style: TextStyle(fontSize: 14, color: Colors.white70),
               ),
-              SizedBox(height: 5),
+              const SizedBox(height: 5),
               Text(
-                '₫ 9.000.000',
-                style: TextStyle(
+                currencyFormat.format(totalFund),
+                style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
@@ -108,43 +201,71 @@ class ExpensesTabContent extends StatelessWidget {
     );
   }
 
-  // Widget Danh Sách Chi Tiêu
-  Widget _buildExpenseList() {
-    final List<Map<String, dynamic>> expenses = [
-      {'name': 'Fund', 'payer': 'All', 'amount': 9000000, 'isExpense': false},
-      {'name': 'Beer', 'payer': 'Quyen', 'amount': -3000000, 'isExpense': true},
-      {'name': 'Beef', 'payer': 'Lộc', 'amount': -200000, 'isExpense': true},
-      {'name': 'Tiền xe', 'payer': 'Duy Hoàng Nguyên (me)', 'amount': -1000000, 'isExpense': true},
-    ];
+  Widget _buildTransactionList(List<Map<String, dynamic>> items) {
+    if (items.isEmpty) {
+      return const Center(child: Text("No transactions yet.", style: TextStyle(color: Colors.white54)));
+    }
 
     return ListView.builder(
       physics: const NeverScrollableScrollPhysics(),
       shrinkWrap: true,
-      itemCount: expenses.length,
+      itemCount: items.length,
       itemBuilder: (context, index) {
-        final item = expenses[index];
-        return _buildExpenseItem(
-          name: item['name'],
-          payer: item['payer'],
-          amount: item['amount'],
-          isExpense: item['isExpense'],
+        final item = items[index];
+        final payerId = item['isExpense'] ? item['payerId'] : item['userId'];
+
+        return FutureBuilder<String>(
+          future: _resolveUserName(payerId),
+          builder: (context, snapshot) {
+            final payerName = snapshot.data ?? '...';
+            return _buildExpenseItem(
+              name: item['name'],
+              payer: payerName,
+              amount: item['amount'],
+              isExpense: item['isExpense'],
+              date: item['date'],
+            );
+          },
         );
       },
     );
+  }
+
+  Future<String> _resolveUserName(String? uid) async {
+    if (uid == null) return "Unknown";
+    if (_userNames.containsKey(uid)) return _userNames[uid]!;
+
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser != null && currentUser.uid == uid) {
+      _userNames[uid] = "Me";
+      return "Me";
+    }
+
+    try {
+      final doc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
+      if (doc.exists) {
+        final name = doc.data()?['displayName'] ?? 'Unknown';
+        _userNames[uid] = name;
+        return name;
+      }
+    } catch (e) {
+      // ignore
+    }
+    _userNames[uid] = "Unknown";
+    return "Unknown";
   }
 
   // Widget từng khoản mục chi tiêu
   Widget _buildExpenseItem({
     required String name,
     required String payer,
-    required int amount,
+    required double amount,
     required bool isExpense,
+    DateTime? date,
   }) {
-    String amountText = amount.abs().toString().replaceAllMapped(
-      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]}.',
-    );
-    amountText = '${isExpense ? '-' : ''}${amountText} ₫';
+    final currencyFormat = NumberFormat.currency(locale: 'vi_VN', symbol: '₫', decimalDigits: 0);
+    String amountText = currencyFormat.format(amount);
+    amountText = '${isExpense ? '-' : ''}$amountText';
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12.0),
@@ -163,7 +284,11 @@ class ExpensesTabContent extends StatelessWidget {
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(6),
               ),
-              child: const Icon(Icons.payments, size: 18, color: expenseCardColor),
+              child: Icon(
+                isExpense ? Icons.receipt_long : Icons.savings,
+                size: 18, 
+                color: expenseCardColor
+              ),
             ),
 
             const SizedBox(width: 15),
@@ -183,12 +308,19 @@ class ExpensesTabContent extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    isExpense ? 'Paid by $payer' : payer,
+                    isExpense ? 'Paid by $payer' : 'Contributed by $payer',
                     style: const TextStyle(
                       color: Colors.white70,
                       fontSize: 13,
                     ),
                   ),
+                  if (date != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      DateFormat('dd/MM/yyyy HH:mm').format(date),
+                      style: const TextStyle(color: Colors.white38, fontSize: 10),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -207,12 +339,12 @@ class ExpensesTabContent extends StatelessWidget {
 
             const SizedBox(width: 10),
 
-            // Nút xóa (X)
-            Icon(
-              Icons.close,
-              color: Colors.white.withOpacity(0.5),
-              size: 18,
-            ),
+            // Nút xóa (X) - Có thể thêm chức năng xóa sau này
+            // Icon(
+            //   Icons.close,
+            //   color: Colors.white.withOpacity(0.5),
+            //   size: 18,
+            // ),
           ],
         ),
       ),

@@ -408,7 +408,7 @@ class _NewTripPageState extends State<CreateTrip> {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
                   elevation: 5,
                 ),
-                child: const Text('Thêm chuyến đi', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
+                child: const Text('Tạo chuyến đi', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
               ),
             ),
             const SizedBox(height: 20),

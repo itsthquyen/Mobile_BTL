@@ -17,11 +17,13 @@ final List<Map<String, dynamic>> memberDebts = [
 ];
 
 class AddTransferModal extends StatefulWidget {
+  final String tripId; // Thêm tripId
   final VoidCallback onNavigateToExpense;
   final VoidCallback onNavigateToFund;
 
   const AddTransferModal({
     super.key,
+    required this.tripId,
     required this.onNavigateToExpense,
     required this.onNavigateToFund,
   });
@@ -87,7 +89,7 @@ class _AddTransferModalState extends State<AddTransferModal> {
             child: const Text('Cancel', style: TextStyle(color: lightTextColor, fontSize: 16)),
           ),
           const Text(
-            'Add Expense', // Giữ nguyên tiêu đề theo ảnh
+            'Transfer', // Sửa tiêu đề
             style: TextStyle(color: lightTextColor, fontWeight: FontWeight.bold, fontSize: 17),
           ),
           const SizedBox(width: 80),

@@ -2,12 +2,13 @@
 import 'package:flutter/material.dart';
 import 'add_expense.dart';
 import 'add_fund.dart';
-import 'add_transfer.dart'; // Import file mới
+import 'add_transfer.dart';
 
 enum ExpenseScreen { expense, fund, transfer }
 
 class ExpenseFundContainer extends StatefulWidget {
-  const ExpenseFundContainer({super.key});
+  final String tripId; // Nhận tripId từ TripDetailsPage
+  const ExpenseFundContainer({super.key, required this.tripId});
 
   @override
   State<ExpenseFundContainer> createState() => _ExpenseFundContainerState();
@@ -33,18 +34,21 @@ class _ExpenseFundContainerState extends State<ExpenseFundContainer> {
       case ExpenseScreen.expense:
         return AddExpenseModal(
           key: const ValueKey('Expense'),
+          tripId: widget.tripId, // Truyền tripId xuống
           onNavigateToFund: _showFund,
           onNavigateToTransfer: _showTransfer,
         );
       case ExpenseScreen.fund:
         return AddFundModal(
           key: const ValueKey('Fund'),
+          tripId: widget.tripId, // Truyền tripId xuống
           onNavigateToExpense: _showExpense,
           onNavigateToTransfer: _showTransfer,
         );
       case ExpenseScreen.transfer:
         return AddTransferModal(
           key: const ValueKey('Transfer'),
+          tripId: widget.tripId, // Truyền tripId xuống
           onNavigateToExpense: _showExpense,
           onNavigateToFund: _showFund,
         );

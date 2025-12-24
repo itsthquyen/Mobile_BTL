@@ -1,4 +1,6 @@
 // lib/ui/Home/TripDetails/Expenses/add_fund.dart
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -9,13 +11,15 @@ const Color lightTextColor = Colors.white;
 const List<String> expenseTypes = ['Expense', 'Fund', 'Transfer'];
 
 class AddFundModal extends StatefulWidget {
+  final String tripId;
   final VoidCallback onNavigateToExpense;
-  final VoidCallback onNavigateToTransfer; // Đã thêm
+  final VoidCallback onNavigateToTransfer;
 
   const AddFundModal({
     super.key,
+    required this.tripId,
     required this.onNavigateToExpense,
-    required this.onNavigateToTransfer, // Đã thêm
+    required this.onNavigateToTransfer,
   });
 
   @override
@@ -24,15 +28,18 @@ class AddFundModal extends StatefulWidget {
 
 class _AddFundModalState extends State<AddFundModal> {
   final TextEditingController _titleController = TextEditingController(text: 'Quỹ');
-  final TextEditingController _amountController = TextEditingController(text: '3.000.000');
+  final TextEditingController _amountController = TextEditingController(text: '3000000');
   final TextEditingController _dateController = TextEditingController();
 
+  Map<String, String> _tripMembers = {}; // uid -> displayName
+  String? _selectedPayerUid;
   DateTime _selectedDate = DateTime.now();
 
   @override
   void initState() {
     super.initState();
     _dateController.text = _formatDate(_selectedDate);
+    _loadTripMembers();
   }
 
   @override
@@ -41,6 +48,50 @@ class _AddFundModalState extends State<AddFundModal> {
     _amountController.dispose();
     _dateController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadTripMembers() async {
+    final doc = await FirebaseFirestore.instance
+        .collection('trips')
+        .doc(widget.tripId)
+        .get();
+
+    if (!doc.exists) return;
+
+    final membersMap = doc.data()?['members'] as Map<String, dynamic>?;
+
+    if (membersMap != null && membersMap.isNotEmpty) {
+      // membersMap: {uid: role}
+      // Need to fetch display names for these UIDs
+      Map<String, String> memberNames = {};
+
+      // Fetch names in parallel
+      await Future.wait(membersMap.keys.map((uid) async {
+        try {
+          final userDoc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
+          if (userDoc.exists) {
+            memberNames[uid] = userDoc.data()?['displayName'] ?? 'Unknown';
+          } else {
+            memberNames[uid] = 'Unknown';
+          }
+        } catch (e) {
+          memberNames[uid] = 'Unknown';
+        }
+      }));
+
+      if (mounted) {
+        setState(() {
+          _tripMembers = memberNames;
+          // Set default payer to current user if possible, else first in list
+          final currentUserUid = FirebaseAuth.instance.currentUser?.uid;
+          if (currentUserUid != null && _tripMembers.containsKey(currentUserUid)) {
+            _selectedPayerUid = currentUserUid;
+          } else if (_tripMembers.isNotEmpty) {
+            _selectedPayerUid = _tripMembers.keys.first;
+          }
+        });
+      }
+    }
   }
 
   String _formatDate(DateTime date) {
@@ -77,9 +128,36 @@ class _AddFundModalState extends State<AddFundModal> {
     }
   }
 
-  void _addFund() {
-    print('Fund Added: ${_titleController.text} - ${_amountController.text}');
-    Navigator.pop(context);
+  Future<void> _addFund() async {
+    if (_titleController.text.isEmpty || _amountController.text.isEmpty || _selectedPayerUid == null) return;
+
+    final amount = double.tryParse(_amountController.text.replaceAll('.', '')) ?? 0;
+    
+    try {
+      await FirebaseFirestore.instance
+          .collection('trips')
+          .doc(widget.tripId)
+          .collection('funds')
+          .add({
+        'userId': _selectedPayerUid, // Người đóng quỹ được chọn
+        'amount': amount,
+        'currency': 'VND', // Mặc định
+        'date': Timestamp.fromDate(_selectedDate),
+        'note': 'Quỹ', // Mặc định là Quỹ, không thay đổi
+        'proofImage': '', // Chưa có ảnh
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
+      if (mounted) {
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error adding fund: $e')),
+        );
+      }
+    }
   }
 
   @override
@@ -101,6 +179,9 @@ class _AddFundModalState extends State<AddFundModal> {
                     _buildTitleInput(),
                     const SizedBox(height: 25),
                     _buildAmountInput(),
+                    const SizedBox(height: 25),
+                    // Thêm Dropdown chọn người đóng quỹ
+                    _buildPaidByDropdown(),
                     const SizedBox(height: 25),
                     _buildWhenInput(context),
                   ],
@@ -173,7 +254,7 @@ class _AddFundModalState extends State<AddFundModal> {
             onPressed: () => Navigator.pop(context),
             child: const Text('Cancel', style: TextStyle(color: lightTextColor, fontSize: 16)),
           ),
-          const Text('Add Expense', style: TextStyle(color: lightTextColor, fontWeight: FontWeight.bold, fontSize: 17)),
+          const Text('Add Fund', style: TextStyle(color: lightTextColor, fontWeight: FontWeight.bold, fontSize: 17)),
           const SizedBox(width: 80),
         ],
       ),
@@ -184,28 +265,19 @@ class _AddFundModalState extends State<AddFundModal> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Title', style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w500, fontSize: 15)),
+        const Text('Note / Title', style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w500, fontSize: 15)),
         const SizedBox(height: 8),
-        Row(
-          children: [
-            Expanded(
-              child: TextField(
-                controller: _titleController,
-                readOnly: true,
-                style: const TextStyle(color: lightTextColor, fontSize: 16),
-                decoration: InputDecoration(
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
-                  filled: true,
-                  fillColor: darkFieldColor,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
-                ),
-              ),
-            ),
-            const SizedBox(width: 10),
-            _buildAccessoryButton(Icons.emoji_emotions_outlined),
-            const SizedBox(width: 10),
-            _buildAccessoryButton(Icons.camera_alt_outlined),
-          ],
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
+          decoration: BoxDecoration(
+              color: darkFieldColor,
+              borderRadius: BorderRadius.circular(10)
+          ),
+          child: const Text(
+            'Quỹ',
+            style: TextStyle(color: lightTextColor, fontSize: 16),
+          ),
         ),
       ],
     );
@@ -256,6 +328,41 @@ class _AddFundModalState extends State<AddFundModal> {
               ),
             ),
           ],
+        ),
+      ],
+    );
+  }
+  
+  Widget _buildPaidByDropdown() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Contributed by', style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w500, fontSize: 15)),
+        const SizedBox(height: 8),
+        Container(
+          height: 58,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            color: darkFieldColor,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: _selectedPayerUid,
+              isExpanded: true,
+              dropdownColor: darkFieldColor,
+              icon: const Icon(Icons.keyboard_arrow_down, color: Colors.white70),
+              style: const TextStyle(color: Colors.white, fontSize: 16),
+              items: _tripMembers.entries.map((entry) {
+                return DropdownMenuItem<String>(
+                  value: entry.key,
+                  child: Text(entry.value,
+                      style: const TextStyle(color: Colors.white)),
+                );
+              }).toList(),
+              onChanged: (v) => setState(() => _selectedPayerUid = v),
+            ),
+          ),
         ),
       ],
     );
