@@ -18,7 +18,7 @@ class LoginApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const MaterialApp(
-      title: 'Firebase Login Demo',
+      title: 'BTL Mobile',
       debugShowCheckedModeBanner: false,
       home: LoginPage(), // Bắt đầu với LoginPage
     );
