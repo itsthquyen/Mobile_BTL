@@ -35,7 +35,7 @@ class Trip {
     return Trip(
       id: id,
       name: data['name'] ?? 'Untitled Trip',
-      coverUrl: data['coverUrl'] ?? 'https://picsum.photos/400/200', 
+      coverUrl: data['coverUrl'] ?? 'https://picsum.photos/400/200',
       members: membersMap,
       memberCount: membersMap.length,
       startDate: start,

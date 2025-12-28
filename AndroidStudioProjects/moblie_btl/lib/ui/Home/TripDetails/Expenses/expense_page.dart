@@ -8,6 +8,7 @@ import 'package:intl/intl.dart';
 // ********************************************
 const Color mainBlueColor = Color(0xFF153359);
 const Color expenseCardColor = Color(0xFF2C436D);
+const Color accentGoldColor = Color(0xFFEAD8B1);
 
 // ********************************************
 // ******** 2. WIDGET NỘI DUNG TAB EXPENSES ****
@@ -20,9 +21,22 @@ class ExpensesTabContent extends StatefulWidget {
   State<ExpensesTabContent> createState() => _ExpensesTabContentState();
 }
 
-class _ExpensesTabContentState extends State<ExpensesTabContent> {
+class _ExpensesTabContentState extends State<ExpensesTabContent> with SingleTickerProviderStateMixin {
   // Cache user names to avoid repeated fetch
   final Map<String, String> _userNames = {};
+  late TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -41,7 +55,7 @@ class _ExpensesTabContentState extends State<ExpensesTabContent> {
               .snapshots(),
           builder: (context, fundsSnapshot) {
             if (expensesSnapshot.hasError || fundsSnapshot.hasError) {
-              return const Center(child: Text('Error loading data', style: TextStyle(color: Colors.white)));
+              return const Center(child: Text('Lỗi khi tải dữ liệu', style: TextStyle(color: Colors.white)));
             }
 
             if (!expensesSnapshot.hasData || !fundsSnapshot.hasData) {
@@ -66,69 +80,74 @@ class _ExpensesTabContentState extends State<ExpensesTabContent> {
 
             double remainingBalance = totalFunds - totalExpenses;
 
-            // Merge and sort items
-            List<Map<String, dynamic>> items = [];
-
+            // Prepare lists
+            List<Map<String, dynamic>> expenseItems = [];
             for (var doc in expensesDocs) {
               final data = doc.data() as Map<String, dynamic>;
-              items.add({
+              expenseItems.add({
                 'id': doc.id,
-                'name': data['title'] ?? 'Expense',
+                'name': data['title'] ?? 'Chi phí',
                 'payerId': data['payerId'],
                 'amount': (data['amount'] as num?)?.toDouble() ?? 0,
                 'date': (data['date'] as Timestamp?)?.toDate(),
                 'isExpense': true,
               });
             }
+            expenseItems.sort((a, b) => (b['date'] as DateTime).compareTo(a['date'] as DateTime));
 
+            List<Map<String, dynamic>> fundItems = [];
             for (var doc in fundsDocs) {
               final data = doc.data() as Map<String, dynamic>;
-              items.add({
+              fundItems.add({
                 'id': doc.id,
-                'name': (data['note'] != null && data['note'].toString().isNotEmpty) ? data['note'] : 'Fund Contribution',
+                'name': (data['note'] != null && data['note'].toString().isNotEmpty) ? data['note'] : 'Đóng quỹ',
                 'userId': data['userId'],
                 'amount': (data['amount'] as num?)?.toDouble() ?? 0,
                 'date': (data['date'] as Timestamp?)?.toDate(),
                 'isExpense': false,
               });
             }
+            fundItems.sort((a, b) => (b['date'] as DateTime).compareTo(a['date'] as DateTime));
 
-            // Sort by date descending
-            items.sort((a, b) {
-              DateTime da = a['date'] ?? DateTime(1970);
-              DateTime db = b['date'] ?? DateTime(1970);
-              return db.compareTo(da);
-            });
-
-            return SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 20.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 20),
-
-                  _buildSummaryCard(remainingBalance, totalFunds),
-
-                  const SizedBox(height: 20),
-
-                  // Header
-                  if (items.isNotEmpty)
-                    const Text(
-                      'Recent Activity',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white70,
-                      ),
-                    ),
-
-                  const SizedBox(height: 10),
-
-                  _buildTransactionList(items),
-
-                  const SizedBox(height: 100), // Khoảng trống cho FAB
-                ],
-              ),
+            return Column(
+              children: [
+                const SizedBox(height: 10),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: _buildSummaryCard(remainingBalance, totalFunds),
+                ),
+                const SizedBox(height: 15),
+                // TabBar
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 20),
+                  child: TabBar(
+                    controller: _tabController,
+                    indicatorColor: accentGoldColor,
+                    indicatorWeight: 3,
+                    dividerColor: Colors.transparent,
+                    labelColor: Colors.white,
+                    unselectedLabelColor: Colors.white54,
+                    labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    tabs: const [
+                      Tab(text: "Hoạt động"),
+                      Tab(text: "Quỹ"),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 15),
+                // TabBarView
+                Expanded(
+                  child: TabBarView(
+                    controller: _tabController,
+                    children: [
+                      // Tab Hoạt động (Expenses)
+                      _buildTransactionList(expenseItems),
+                      // Tab Quỹ (Funds)
+                      _buildTransactionList(fundItems),
+                    ],
+                  ),
+                ),
+              ],
             );
           },
         );
@@ -148,67 +167,79 @@ class _ExpensesTabContentState extends State<ExpensesTabContent> {
         border: Border.all(color: Colors.white10),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.2),
+            color: Colors.black.withValues(alpha: 0.2),
             blurRadius: 10,
             offset: const Offset(0, 5),
           ),
         ],
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          // Remaining balance
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Remaining balance',
-                style: TextStyle(fontSize: 14, color: Colors.white70),
+      child: IntrinsicHeight(
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            // Remaining balance
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Số dư còn lại',
+                    style: TextStyle(fontSize: 14, color: Colors.white70),
+                  ),
+                  const SizedBox(height: 5),
+                  Text(
+                    currencyFormat.format(remaining),
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 5),
-              Text(
-                currencyFormat.format(remaining),
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
+            ),
+        
+            // Đường gạch giữa
+            Container(
+              width: 1,
+              color: Colors.white24,
+              margin: const EdgeInsets.symmetric(horizontal: 20),
+            ),
+        
+            // Fund
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  const Text(
+                    'Tổng quỹ',
+                    style: TextStyle(fontSize: 14, color: Colors.white70),
+                  ),
+                  const SizedBox(height: 5),
+                  Text(
+                    currencyFormat.format(totalFund),
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
-
-          // Fund
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              const Text(
-                'Fund',
-                style: TextStyle(fontSize: 14, color: Colors.white70),
-              ),
-              const SizedBox(height: 5),
-              Text(
-                currencyFormat.format(totalFund),
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-            ],
-          ),
-        ],
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildTransactionList(List<Map<String, dynamic>> items) {
     if (items.isEmpty) {
-      return const Center(child: Text("No transactions yet.", style: TextStyle(color: Colors.white54)));
+      return const Center(child: Text("Chưa có giao dịch nào.", style: TextStyle(color: Colors.white54)));
     }
 
     return ListView.builder(
-      physics: const NeverScrollableScrollPhysics(),
-      shrinkWrap: true,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
       itemCount: items.length,
       itemBuilder: (context, index) {
         final item = items[index];
@@ -218,8 +249,16 @@ class _ExpensesTabContentState extends State<ExpensesTabContent> {
           future: _resolveUserName(payerId),
           builder: (context, snapshot) {
             final payerName = snapshot.data ?? '...';
+            
+            // Xử lý hiển thị tên cho Quỹ
+            String displayName = item['name'];
+            if (!item['isExpense']) {
+              // Nếu là Quỹ, hiển thị tên người đóng góp thay vì "Quỹ"
+              displayName = payerName;
+            }
+
             return _buildExpenseItem(
-              name: item['name'],
+              name: displayName,
               payer: payerName,
               amount: item['amount'],
               isExpense: item['isExpense'],
@@ -237,8 +276,8 @@ class _ExpensesTabContentState extends State<ExpensesTabContent> {
 
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser != null && currentUser.uid == uid) {
-      _userNames[uid] = "Me";
-      return "Me";
+      _userNames[uid] = "Tôi";
+      return "Tôi";
     }
 
     try {
@@ -265,8 +304,7 @@ class _ExpensesTabContentState extends State<ExpensesTabContent> {
   }) {
     final currencyFormat = NumberFormat.currency(locale: 'vi_VN', symbol: '₫', decimalDigits: 0);
     String amountText = currencyFormat.format(amount);
-    amountText = '${isExpense ? '-' : ''}$amountText';
-
+    
     return Padding(
       padding: const EdgeInsets.only(bottom: 12.0),
       child: Container(
@@ -307,13 +345,17 @@ class _ExpensesTabContentState extends State<ExpensesTabContent> {
                     ),
                   ),
                   const SizedBox(height: 2),
-                  Text(
-                    isExpense ? 'Paid by $payer' : 'Contributed by $payer',
-                    style: const TextStyle(
-                      color: Colors.white70,
-                      fontSize: 13,
+                  // Logic hiển thị subtitle
+                  if (isExpense) ...[
+                    Text(
+                      'Chi bởi $payer',
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 13,
+                      ),
                     ),
-                  ),
+                  ],
+                  
                   if (date != null) ...[
                     const SizedBox(height: 2),
                     Text(
@@ -336,15 +378,6 @@ class _ExpensesTabContentState extends State<ExpensesTabContent> {
                 fontSize: 16,
               ),
             ),
-
-            const SizedBox(width: 10),
-
-            // Nút xóa (X) - Có thể thêm chức năng xóa sau này
-            // Icon(
-            //   Icons.close,
-            //   color: Colors.white.withOpacity(0.5),
-            //   size: 18,
-            // ),
           ],
         ),
       ),

@@ -3,7 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:moblie_btl/model/trip.dart'; // Import Trip model chính
+import 'package:moblie_btl/models/trip.dart'; // Import Trip models chính
 import 'package:moblie_btl/ui/Home/TripDetails/schedule_tab.dart';
 
 // Import các file cần thiết

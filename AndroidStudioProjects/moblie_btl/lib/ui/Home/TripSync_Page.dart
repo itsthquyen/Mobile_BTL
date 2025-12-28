@@ -7,7 +7,7 @@ import 'package:moblie_btl/ui/Notifications/Notifications_page.dart';
 import 'package:moblie_btl/ui/Profile/UserProfile.dart';
 import 'package:moblie_btl/ui/Home/TripDetails/trip_details.dart';
 import 'package:moblie_btl/ui/Home/new_Trip/new_Trip.dart';
-import '../../model/trip.dart';
+import '../../models/trip.dart';
 
 const primaryColor = Color(0xFF153359);
 

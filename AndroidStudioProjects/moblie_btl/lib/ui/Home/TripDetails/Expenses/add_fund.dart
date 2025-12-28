@@ -28,7 +28,7 @@ class AddFundModal extends StatefulWidget {
 
 class _AddFundModalState extends State<AddFundModal> {
   final TextEditingController _titleController = TextEditingController(text: 'Quỹ');
-  final TextEditingController _amountController = TextEditingController(text: '3000000');
+  final TextEditingController _amountController = TextEditingController(text: '0'); // Mặc định là 0
   final TextEditingController _dateController = TextEditingController();
 
   Map<String, String> _tripMembers = {}; // uid -> displayName
@@ -325,6 +325,11 @@ class _AddFundModalState extends State<AddFundModal> {
                   fillColor: darkFieldColor,
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
                 ),
+                onTap: () {
+                  if (_amountController.text == '0') {
+                    _amountController.clear();
+                  }
+                },
               ),
             ),
           ],
