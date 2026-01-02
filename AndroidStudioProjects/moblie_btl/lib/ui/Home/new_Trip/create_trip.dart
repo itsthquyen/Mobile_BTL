@@ -1,123 +1,69 @@
-// lib/ui/trip/new_trip_page.dart
-
-import 'dart:math';
-
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'; // Để copy join code
+import 'package:flutter/services.dart';
+import 'package:moblie_btl/controllers/trip_controller.dart'; // Import Controller
 
-// Màu chủ đạo
 const primaryColor = Color(0xFF153359);
-const inputFillColor = Color(0xFFF0F0FF);
+const inputFillColor = Color(0xFFF0F4F8);
 
-class CreateTrip extends StatefulWidget {
-  const CreateTrip({super.key});
+class CreateTripModal extends StatefulWidget {
+  const CreateTripModal({super.key});
 
   @override
-  State<CreateTrip> createState() => _NewTripPageState();
+  State<CreateTripModal> createState() => _CreateTripModalState();
 }
 
-class _NewTripPageState extends State<CreateTrip> {
-  // Controllers
-  final TextEditingController _titleController = TextEditingController();
-  final TextEditingController _participantController = TextEditingController();
-
-  // State
-  List<Map<String, dynamic>> participants = [];
-
-  String selectedCurrency = 'VND';
-  final List<String> currencies = ['VND', 'USD', 'EUR'];
+class _CreateTripModalState extends State<CreateTripModal> {
+  final _tripController = TripController(); // Sử dụng Controller
+  final _titleController = TextEditingController();
+  final _participantController = TextEditingController();
 
   DateTime? _startDate;
   DateTime? _endDate;
+  String selectedCurrency = 'VND';
+  final List<String> currencies = ['VND', 'USD', 'EUR', 'JPY'];
+
+  // List người tham gia: {uid, email, name, role}
+  List<Map<String, dynamic>> participants = [
+    // Người tạo sẽ được thêm tự động trong controller
+  ];
+
   bool _isLoading = false;
   bool _isSearchingUser = false;
 
-  @override
-  void initState() {
-    super.initState();
-    _setupCurrentUser();
-  }
+  // --- Logic UI ---
 
-  void _setupCurrentUser() {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
-      setState(() {
-        participants.add({
-          'uid': user.uid,
-          'name': user.displayName ?? user.email ?? 'Me',
-          'email': user.email ?? '',
-          'role': 'admin',
-        });
-      });
-    }
-  }
+  Future<void> _addParticipantByEmail() async {
+    final email = _participantController.text.trim();
+    if (email.isEmpty) return;
 
-  @override
-  void dispose() {
-    _titleController.dispose();
-    _participantController.dispose();
-    super.dispose();
-  }
-
-  // --- LOGIC MỚI: TÌM VÀ THÊM THÀNH VIÊN BẰNG EMAIL ---
-  // Trả về true nếu thêm thành công, false nếu thất bại/đã tồn tại/lỗi
-  Future<bool> _addParticipantByEmail() async {
-    final emailInput = _participantController.text.trim();
-    if (emailInput.isEmpty) return false;
-
-    // 1. Kiểm tra xem đã tồn tại trong danh sách chưa
-    final exists = participants.any((p) => p['email'] == emailInput);
-    if (exists) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('User này đã được thêm!')));
-      _participantController.clear();
-      return true; // Coi như thành công vì đã có trong list
+    if (participants.any((p) => p['email'] == email)) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Người này đã được thêm!')));
+      return;
     }
 
     setState(() => _isSearchingUser = true);
 
-    try {
-      // 2. Query tìm user trong collection 'users'
-      final querySnapshot = await FirebaseFirestore.instance
-          .collection('users')
-          .where('email', isEqualTo: emailInput)
-          .limit(1)
-          .get();
+    // Gọi Controller để tìm user
+    final user = await _tripController.findUserByEmail(email);
 
-      if (querySnapshot.docs.isNotEmpty) {
-        final userDoc = querySnapshot.docs.first;
-        final userData = userDoc.data();
+    if (mounted) {
+      setState(() => _isSearchingUser = false);
 
-        // 3. Thêm user tìm thấy vào danh sách state
+      if (user != null) {
         setState(() {
           participants.add({
-            'uid': userDoc.id,
-            'name': userData['displayName'] ?? emailInput,
-            'email': emailInput,
+            ...user,
             'role': 'member',
           });
           _participantController.clear();
         });
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Đã thêm thành viên thành công!')));
-        return true;
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Không tìm thấy user có email "$emailInput"'),
-          backgroundColor: Colors.redAccent,
-        ));
-        return false;
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Không tìm thấy user với email: $email')));
       }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi khi tìm kiếm: $e')));
-      return false;
-    } finally {
-      if(mounted) setState(() => _isSearchingUser = false);
     }
   }
 
   void _removeParticipant(int index) {
-    if (participants[index]['role'] == 'admin') return;
     setState(() {
       participants.removeAt(index);
     });
@@ -127,18 +73,9 @@ class _NewTripPageState extends State<CreateTrip> {
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: DateTime.now(),
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2030),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(primary: primaryColor, onPrimary: Colors.white),
-          ),
-          child: child!,
-        );
-      },
+      firstDate: DateTime.now(),
+      lastDate: DateTime(2101),
     );
-
     if (picked != null) {
       setState(() {
         if (isStart) {
@@ -153,38 +90,14 @@ class _NewTripPageState extends State<CreateTrip> {
     }
   }
 
-  String _generateJoinCode() {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    final rnd = Random();
-    String code = String.fromCharCodes(Iterable.generate(6, (_) => chars.codeUnitAt(rnd.nextInt(chars.length))));
-    return code;
-  }
-
-  String _getRandomCoverUrl() {
-    final List<String> covers = [
-      'https://picsum.photos/id/1015/400/200',
-      'https://picsum.photos/id/1036/400/200',
-      'https://picsum.photos/id/1047/400/200',
-      'https://picsum.photos/id/1050/400/200',
-      'https://picsum.photos/id/164/400/200',
-      'https://picsum.photos/id/28/400/200',
-    ];
-    return covers[Random().nextInt(covers.length)];
-  }
-
   String _formatDate(DateTime date) {
     return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
   }
 
-  // --- Logic chính: TẠO CHUYẾN ĐI ---
+  // --- Logic chính: TẠO CHUYẾN ĐI (Gọi Controller) ---
   Future<void> _createTrip() async {
     final title = _titleController.text.trim();
-    final user = FirebaseAuth.instance.currentUser;
 
-    if (user == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Vui lòng đăng nhập!')));
-      return;
-    }
     if (title.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Vui lòng nhập tên chuyến đi!')));
       return;
@@ -215,12 +128,8 @@ class _NewTripPageState extends State<CreateTrip> {
       );
 
       if (confirm == true) {
-        // Thử thêm thành viên
-        final success = await _addParticipantByEmail();
-        // Nếu thêm thất bại (không tìm thấy user), dừng lại để người dùng kiểm tra
-        if (!success) return;
+        await _addParticipantByEmail();
       } else {
-        // Nếu chọn Không, xóa text đi để tiếp tục
         _participantController.clear();
       }
     }
@@ -229,41 +138,18 @@ class _NewTripPageState extends State<CreateTrip> {
     setState(() => _isLoading = true);
 
     try {
-      final joinCode = _generateJoinCode();
-      final coverUrl = _getRandomCoverUrl();
-
-      Map<String, dynamic> membersMap = {};
-
-      for (var p in participants) {
-        final uid = p['uid'] as String?;
-        final role = p['role'] as String?;
-
-        if (uid != null && uid.isNotEmpty && role != null) {
-          membersMap[uid] = role;
-        }
-      }
-
-      if (!membersMap.containsKey(user.uid)) {
-        membersMap[user.uid] = 'admin';
-      }
-
-      await FirebaseFirestore.instance.collection('trips').add({
-        'name': title,
-        'coverUrl': coverUrl,
-        'startDate': Timestamp.fromDate(_startDate!),
-        'endDate': Timestamp.fromDate(_endDate!),
-        'createdBy': user.email ?? user.uid,
-        'totalBudget': 0,
-        'fundTotal': 0,
-        'joinCode': joinCode,
-        'members': membersMap,
-        'currency': selectedCurrency,
-        'createdAt': FieldValue.serverTimestamp(),
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
+      // GỌI CONTROLLER ĐỂ TẠO TRIP
+      final joinCode = await _tripController.createTrip(
+        title: title,
+        startDate: _startDate!,
+        endDate: _endDate!,
+        currency: selectedCurrency,
+        participants: participants,
+      );
 
       if (!mounted) return;
 
+      // Hiển thị Dialog thành công
       await showDialog(
         context: context,
         barrierDismissible: false,
@@ -303,8 +189,8 @@ class _NewTripPageState extends State<CreateTrip> {
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.pop(ctx);
-                Navigator.pop(context);
+                Navigator.pop(ctx); // Close dialog
+                Navigator.pop(context); // Close CreateTripModal
               },
               child: const Text('Done'),
             ),
@@ -393,7 +279,7 @@ class _NewTripPageState extends State<CreateTrip> {
                   ? const Padding(padding: EdgeInsets.all(12.0), child: CircularProgressIndicator(strokeWidth: 2))
                   : IconButton(
                       icon: const Icon(Icons.add_circle, color: primaryColor),
-                      onPressed: () => _addParticipantByEmail(),
+                      onPressed: _addParticipantByEmail,
                     ),
             ),
             const SizedBox(height: 50),

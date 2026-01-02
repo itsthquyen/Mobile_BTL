@@ -1,22 +1,20 @@
-// lib/ui/trip/join_trip_page.dart
-
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:moblie_btl/controllers/trip_controller.dart'; // Import Controller
 
 // ===== CONSTANTS =====
 const primaryColor = Color(0xFF153359);
 const inputFillColor = Color(0xFFF0F0FF);
 
-class JoinTripPage extends StatefulWidget {
-  const JoinTripPage({super.key});
+class JoinTripModal extends StatefulWidget {
+  const JoinTripModal({super.key});
 
   @override
-  State<JoinTripPage> createState() => _JoinTripPageState();
+  State<JoinTripModal> createState() => _JoinTripModalState();
 }
 
-class _JoinTripPageState extends State<JoinTripPage> {
+class _JoinTripModalState extends State<JoinTripModal> {
   final TextEditingController _linkController = TextEditingController();
+  final TripController _tripController = TripController();
   bool _isLoading = false;
 
   String _displayName = '';
@@ -35,17 +33,10 @@ class _JoinTripPageState extends State<JoinTripPage> {
 
   // ===== LOAD USER DISPLAY NAME =====
   Future<void> _loadUserName() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
-
-    final doc = await FirebaseFirestore.instance
-        .collection('users')
-        .doc(user.uid)
-        .get();
-
-    if (doc.exists && mounted) {
+    final name = await _tripController.getCurrentUserName();
+    if (mounted) {
       setState(() {
-        _displayName = doc.data()?['displayName'] ?? '';
+        _displayName = name;
       });
     }
   }
@@ -53,55 +44,26 @@ class _JoinTripPageState extends State<JoinTripPage> {
   // ===== JOIN TRIP =====
   Future<void> _joinTrip() async {
     final joinCode = _linkController.text.trim();
-    final user = FirebaseAuth.instance.currentUser;
 
     if (joinCode.isEmpty) {
       _showMessage('Vui lòng nhập mã mời');
       return;
     }
 
-    if (user == null) {
-      _showMessage('Bạn cần đăng nhập để tham gia');
-      return;
-    }
-
     setState(() => _isLoading = true);
 
     try {
-      final query = await FirebaseFirestore.instance
-          .collection('trips')
-          .where('joinCode', isEqualTo: joinCode)
-          .limit(1)
-          .get();
+      await _tripController.joinTrip(joinCode);
 
-      if (query.docs.isEmpty) {
-        _showMessage('Mã tham gia không hợp lệ');
-        return;
-      }
-
-      final tripDoc = query.docs.first;
-      final tripId = tripDoc.id;
-
-      final members =
-      Map<String, dynamic>.from(tripDoc.data()['members'] ?? {});
-
-      if (members.containsKey(user.uid)) {
-        _showMessage('Bạn đã tham gia chuyến đi này rồi');
-        return;
-      }
-
-      await FirebaseFirestore.instance
-          .collection('trips')
-          .doc(tripId)
-          .update({
-        'members.${user.uid}': 'member',
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
+      if (!mounted) return;
 
       _showMessage('🎉 Tham gia chuyến đi thành công!');
       Navigator.pop(context);
     } catch (e) {
-      _showMessage('Có lỗi xảy ra');
+      if (mounted) {
+        String message = e.toString().replaceAll('Exception: ', '');
+        _showMessage(message);
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
