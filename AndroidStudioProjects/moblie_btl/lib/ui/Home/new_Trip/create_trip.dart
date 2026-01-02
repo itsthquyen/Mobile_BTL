@@ -6,6 +6,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // Để copy join code
+import 'package:moblie_btl/services/notification_service.dart';
 
 // Màu chủ đạo
 const primaryColor = Color(0xFF153359);
@@ -22,6 +23,7 @@ class _NewTripPageState extends State<CreateTrip> {
   // Controllers
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _participantController = TextEditingController();
+  final NotificationService _notificationService = NotificationService();
 
   // State
   List<Map<String, dynamic>> participants = [];
@@ -70,7 +72,9 @@ class _NewTripPageState extends State<CreateTrip> {
     // 1. Kiểm tra xem đã tồn tại trong danh sách chưa
     final exists = participants.any((p) => p['email'] == emailInput);
     if (exists) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('User này đã được thêm!')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('User này đã được thêm!')));
       _participantController.clear();
       return true; // Coi như thành công vì đã có trong list
     }
@@ -99,20 +103,26 @@ class _NewTripPageState extends State<CreateTrip> {
           });
           _participantController.clear();
         });
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Đã thêm thành viên thành công!')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Đã thêm thành viên thành công!')),
+        );
         return true;
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Không tìm thấy user có email "$emailInput"'),
-          backgroundColor: Colors.redAccent,
-        ));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Không tìm thấy user có email "$emailInput"'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
         return false;
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi khi tìm kiếm: $e')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Lỗi khi tìm kiếm: $e')));
       return false;
     } finally {
-      if(mounted) setState(() => _isSearchingUser = false);
+      if (mounted) setState(() => _isSearchingUser = false);
     }
   }
 
@@ -132,7 +142,10 @@ class _NewTripPageState extends State<CreateTrip> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(primary: primaryColor, onPrimary: Colors.white),
+            colorScheme: const ColorScheme.light(
+              primary: primaryColor,
+              onPrimary: Colors.white,
+            ),
           ),
           child: child!,
         );
@@ -156,7 +169,9 @@ class _NewTripPageState extends State<CreateTrip> {
   String _generateJoinCode() {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     final rnd = Random();
-    String code = String.fromCharCodes(Iterable.generate(6, (_) => chars.codeUnitAt(rnd.nextInt(chars.length))));
+    String code = String.fromCharCodes(
+      Iterable.generate(6, (_) => chars.codeUnitAt(rnd.nextInt(chars.length))),
+    );
     return code;
   }
 
@@ -182,15 +197,21 @@ class _NewTripPageState extends State<CreateTrip> {
     final user = FirebaseAuth.instance.currentUser;
 
     if (user == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Vui lòng đăng nhập!')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Vui lòng đăng nhập!')));
       return;
     }
     if (title.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Vui lòng nhập tên chuyến đi!')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Vui lòng nhập tên chuyến đi!')),
+      );
       return;
     }
     if (_startDate == null || _endDate == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Vui lòng chọn ngày!')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Vui lòng chọn ngày!')));
       return;
     }
 
@@ -200,7 +221,9 @@ class _NewTripPageState extends State<CreateTrip> {
         context: context,
         builder: (ctx) => AlertDialog(
           title: const Text('Thêm thành viên?'),
-          content: Text('Bạn đang nhập dở email "${_participantController.text}". Bạn có muốn thêm người này vào không?'),
+          content: Text(
+            'Bạn đang nhập dở email "${_participantController.text}". Bạn có muốn thêm người này vào không?',
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx, false),
@@ -247,20 +270,31 @@ class _NewTripPageState extends State<CreateTrip> {
         membersMap[user.uid] = 'admin';
       }
 
-      await FirebaseFirestore.instance.collection('trips').add({
-        'name': title,
-        'coverUrl': coverUrl,
-        'startDate': Timestamp.fromDate(_startDate!),
-        'endDate': Timestamp.fromDate(_endDate!),
-        'createdBy': user.email ?? user.uid,
-        'totalBudget': 0,
-        'fundTotal': 0,
-        'joinCode': joinCode,
-        'members': membersMap,
-        'currency': selectedCurrency,
-        'createdAt': FieldValue.serverTimestamp(),
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
+      await FirebaseFirestore.instance
+          .collection('trips')
+          .add({
+            'name': title,
+            'coverUrl': coverUrl,
+            'startDate': Timestamp.fromDate(_startDate!),
+            'endDate': Timestamp.fromDate(_endDate!),
+            'createdBy': user.email ?? user.uid,
+            'totalBudget': 0,
+            'fundTotal': 0,
+            'joinCode': joinCode,
+            'members': membersMap,
+            'currency': selectedCurrency,
+            'createdAt': FieldValue.serverTimestamp(),
+            'updatedAt': FieldValue.serverTimestamp(),
+          })
+          .then((docRef) async {
+            // Gửi thông báo cho tất cả thành viên ban đầu
+            final memberIds = membersMap.keys.toList();
+            await _notificationService.notifyTripCreated(
+              tripId: docRef.id,
+              tripName: title,
+              initialMemberIds: memberIds,
+            );
+          });
 
       if (!mounted) return;
 
@@ -274,15 +308,23 @@ class _NewTripPageState extends State<CreateTrip> {
             children: [
               const Text('Chuyến đi đã được tạo thành công.'),
               const SizedBox(height: 20),
-              const Text('Chia sẻ mã code:', style: TextStyle(color: Colors.grey)),
+              const Text(
+                'Chia sẻ mã code:',
+                style: TextStyle(color: Colors.grey),
+              ),
               const SizedBox(height: 10),
               GestureDetector(
                 onTap: () {
                   Clipboard.setData(ClipboardData(text: joinCode));
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Copied!')));
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(const SnackBar(content: Text('Copied!')));
                 },
                 child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 10,
+                    horizontal: 20,
+                  ),
                   decoration: BoxDecoration(
                     color: primaryColor.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
@@ -291,7 +333,15 @@ class _NewTripPageState extends State<CreateTrip> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(joinCode, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: 2, color: primaryColor)),
+                      Text(
+                        joinCode,
+                        style: const TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 2,
+                          color: primaryColor,
+                        ),
+                      ),
                       const SizedBox(width: 10),
                       const Icon(Icons.copy, size: 20, color: primaryColor),
                     ],
@@ -311,10 +361,11 @@ class _NewTripPageState extends State<CreateTrip> {
           ],
         ),
       );
-
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Lỗi: $e')));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -332,94 +383,143 @@ class _NewTripPageState extends State<CreateTrip> {
           icon: const Icon(Icons.close, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text('Thêm chuyến đi', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-      ),
-      body: _isLoading
-        ? const Center(child: CircularProgressIndicator())
-        : SingleChildScrollView(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            const Text('Tên chuyến đi', style: TextStyle(fontWeight: FontWeight.bold, color: primaryColor)),
-            const SizedBox(height: 8),
-            _buildCustomTextField(
-              controller: _titleController,
-              hintText: 'VD: Hạ Long',
-              prefixIcon: const Icon(Icons.flag, color: Colors.grey),
-            ),
-            const SizedBox(height: 20),
-
-            const Text('Ngày và giờ', style: TextStyle(fontWeight: FontWeight.bold, color: primaryColor)),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildDateSelector(
-                    label: 'Ngày bắt đầu',
-                    date: _startDate,
-                    onTap: () => _selectDate(context, true),
-                  ),
-                ),
-                const SizedBox(width: 15),
-                Expanded(
-                  child: _buildDateSelector(
-                    label: 'Ngày kết thúc',
-                    date: _endDate,
-                    onTap: () => _selectDate(context, false),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-
-            const Text('Giá', style: TextStyle(fontWeight: FontWeight.bold, color: primaryColor)),
-            const SizedBox(height: 8),
-            _buildCurrencyDropdown(),
-            const SizedBox(height: 20),
-
-            const Text('Thành viên', style: TextStyle(fontWeight: FontWeight.bold, color: primaryColor)),
-            const SizedBox(height: 5),
-            const Text('Thêm thành viên bằng email', style: TextStyle(fontSize: 12, color: Colors.grey)),
-            const SizedBox(height: 10),
-
-            _buildParticipantsList(),
-
-            const SizedBox(height: 10),
-            _buildCustomTextField(
-              controller: _participantController,
-              hintText: 'Nhập email',
-              suffixIcon: _isSearchingUser
-                  ? const Padding(padding: EdgeInsets.all(12.0), child: CircularProgressIndicator(strokeWidth: 2))
-                  : IconButton(
-                      icon: const Icon(Icons.add_circle, color: primaryColor),
-                      onPressed: () => _addParticipantByEmail(),
-                    ),
-            ),
-            const SizedBox(height: 50),
-
-            SizedBox(
-              width: double.infinity,
-              height: 55,
-              child: ElevatedButton(
-                onPressed: _createTrip,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: primaryColor,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
-                  elevation: 5,
-                ),
-                child: const Text('Tạo chuyến đi', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
-              ),
-            ),
-            const SizedBox(height: 20),
-          ],
+        title: const Text(
+          'Thêm chuyến đi',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
       ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  const Text(
+                    'Tên chuyến đi',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: primaryColor,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  _buildCustomTextField(
+                    controller: _titleController,
+                    hintText: 'VD: Hạ Long',
+                    prefixIcon: const Icon(Icons.flag, color: Colors.grey),
+                  ),
+                  const SizedBox(height: 20),
+
+                  const Text(
+                    'Ngày và giờ',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: primaryColor,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildDateSelector(
+                          label: 'Ngày bắt đầu',
+                          date: _startDate,
+                          onTap: () => _selectDate(context, true),
+                        ),
+                      ),
+                      const SizedBox(width: 15),
+                      Expanded(
+                        child: _buildDateSelector(
+                          label: 'Ngày kết thúc',
+                          date: _endDate,
+                          onTap: () => _selectDate(context, false),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+
+                  const Text(
+                    'Giá',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: primaryColor,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  _buildCurrencyDropdown(),
+                  const SizedBox(height: 20),
+
+                  const Text(
+                    'Thành viên',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: primaryColor,
+                    ),
+                  ),
+                  const SizedBox(height: 5),
+                  const Text(
+                    'Thêm thành viên bằng email',
+                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+                  const SizedBox(height: 10),
+
+                  _buildParticipantsList(),
+
+                  const SizedBox(height: 10),
+                  _buildCustomTextField(
+                    controller: _participantController,
+                    hintText: 'Nhập email',
+                    suffixIcon: _isSearchingUser
+                        ? const Padding(
+                            padding: EdgeInsets.all(12.0),
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : IconButton(
+                            icon: const Icon(
+                              Icons.add_circle,
+                              color: primaryColor,
+                            ),
+                            onPressed: () => _addParticipantByEmail(),
+                          ),
+                  ),
+                  const SizedBox(height: 50),
+
+                  SizedBox(
+                    width: double.infinity,
+                    height: 55,
+                    child: ElevatedButton(
+                      onPressed: _createTrip,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: primaryColor,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12.0),
+                        ),
+                        elevation: 5,
+                      ),
+                      child: const Text(
+                        'Tạo chuyến đi',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                ],
+              ),
+            ),
     );
   }
 
   // --- Widgets ---
-  Widget _buildDateSelector({required String label, DateTime? date, required VoidCallback onTap}) {
+  Widget _buildDateSelector({
+    required String label,
+    DateTime? date,
+    required VoidCallback onTap,
+  }) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
@@ -433,7 +533,10 @@ class _NewTripPageState extends State<CreateTrip> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(label, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+            Text(
+              label,
+              style: const TextStyle(color: Colors.grey, fontSize: 12),
+            ),
             const SizedBox(height: 5),
             Row(
               children: [
@@ -443,7 +546,9 @@ class _NewTripPageState extends State<CreateTrip> {
                   date != null ? _formatDate(date) : 'Chọn',
                   style: TextStyle(
                     fontSize: 16,
-                    fontWeight: date != null ? FontWeight.bold : FontWeight.normal,
+                    fontWeight: date != null
+                        ? FontWeight.bold
+                        : FontWeight.normal,
                     color: date != null ? Colors.black : Colors.grey,
                   ),
                 ),
@@ -469,8 +574,14 @@ class _NewTripPageState extends State<CreateTrip> {
         fillColor: inputFillColor,
         prefixIcon: prefixIcon,
         suffixIcon: suffixIcon,
-        contentPadding: const EdgeInsets.symmetric(vertical: 18.0, horizontal: 15.0),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.0), borderSide: BorderSide.none),
+        contentPadding: const EdgeInsets.symmetric(
+          vertical: 18.0,
+          horizontal: 15.0,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12.0),
+          borderSide: BorderSide.none,
+        ),
       ),
     );
   }
@@ -488,10 +599,7 @@ class _NewTripPageState extends State<CreateTrip> {
           isExpanded: true,
           icon: const Icon(Icons.arrow_drop_down, color: primaryColor),
           items: currencies.map((String value) {
-            return DropdownMenuItem<String>(
-              value: value,
-              child: Text(value),
-            );
+            return DropdownMenuItem<String>(value: value, child: Text(value));
           }).toList(),
           onChanged: (newValue) => setState(() => selectedCurrency = newValue!),
         ),
@@ -513,15 +621,31 @@ class _NewTripPageState extends State<CreateTrip> {
                 child: Container(
                   padding: const EdgeInsets.all(15.0),
                   decoration: BoxDecoration(
-                    color: isAdmin ? primaryColor.withOpacity(0.1) : inputFillColor,
+                    color: isAdmin
+                        ? primaryColor.withOpacity(0.1)
+                        : inputFillColor,
                     borderRadius: BorderRadius.circular(12.0),
                   ),
                   child: Row(
                     children: [
                       const Icon(Icons.person, color: Colors.grey, size: 20),
                       const SizedBox(width: 10),
-                      Text(person['name'] ?? person['email'] ?? '', style: TextStyle(fontWeight: isAdmin ? FontWeight.bold : FontWeight.normal)),
-                      if (isAdmin) const Text(' (Admin)', style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold))
+                      Text(
+                        person['name'] ?? person['email'] ?? '',
+                        style: TextStyle(
+                          fontWeight: isAdmin
+                              ? FontWeight.bold
+                              : FontWeight.normal,
+                        ),
+                      ),
+                      if (isAdmin)
+                        const Text(
+                          ' (Admin)',
+                          style: TextStyle(
+                            color: primaryColor,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                     ],
                   ),
                 ),

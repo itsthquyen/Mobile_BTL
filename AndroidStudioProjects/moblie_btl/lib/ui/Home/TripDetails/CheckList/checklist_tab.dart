@@ -1,79 +1,144 @@
 // lib/ui/Home/TripDetails/CheckList/checklist_tab.dart
 import 'package:flutter/material.dart';
-// Import file chứa trang chi tiết.
-// Tên file này có thể là 'checklist_item_dialog.dart' hoặc 'member_checklist_page.dart' tùy bạn đặt.
+import 'package:moblie_btl/repository/checklist_repository.dart';
 import 'checklist_item_dialog.dart';
 
-// Giả định màu sắc và các hằng số
+// Color constants
 const Color mainBlueColor = Color(0xFF153359);
 const Color accentGoldColor = Color(0xFFEAD8B1);
 
-// Cấu trúc dữ liệu mẫu: Danh sách các thành viên và vật dụng của họ.
-// Dữ liệu này sau này bạn sẽ lấy từ API hoặc cơ sở dữ liệu.
-final List<Map<String, dynamic>> memberChecklists = [
-  {
-    'name': 'Duy Hoàng Nguyễn (me)',
-    'avatar': Icons.person_pin_circle, // Icon đại diện
-    'items': [
-      {'name': 'Passport', 'isCompleted': true},
-      {'name': 'Sunscreen', 'isCompleted': false},
-      {'name': 'Phone Charger', 'isCompleted': true},
-    ],
-  },
-  {
-    'name': 'Lộc',
-    'avatar': Icons.boy_rounded,
-    'items': [
-      {'name': 'Umbrella', 'isCompleted': false},
-      {'name': 'Snacks', 'isCompleted': false},
-    ],
-  },
-  {
-    'name': 'Quyên',
-    'avatar': Icons.girl_rounded,
-    'items': [
-      {'name': 'Swimsuit', 'isCompleted': true},
-      {'name': 'Towel', 'isCompleted': false},
-      {'name': 'Camera', 'isCompleted': false},
-    ],
-  },
-];
+class ChecklistTabContent extends StatefulWidget {
+  final String tripId;
+  final Map<String, dynamic> members;
 
-class ChecklistTabContent extends StatelessWidget {
-  const ChecklistTabContent({super.key});
+  const ChecklistTabContent({
+    super.key,
+    required this.tripId,
+    required this.members,
+  });
 
-  // Hàm điều hướng sang trang chi tiết checklist của thành viên
-  void _navigateToMemberChecklist(BuildContext context, Map<String, dynamic> memberData) {
-    Navigator.push(
+  @override
+  State<ChecklistTabContent> createState() => _ChecklistTabContentState();
+}
+
+class _ChecklistTabContentState extends State<ChecklistTabContent> {
+  final ChecklistRepository _repository = ChecklistRepository();
+  List<Map<String, dynamic>> _membersInfo = [];
+  Map<String, int> _memberItemCounts = {};
+  Map<String, int> _memberCompletedCounts = {};
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMembersInfo();
+  }
+
+  Future<void> _loadMembersInfo() async {
+    setState(() => _isLoading = true);
+
+    try {
+      // Get member information from repository
+      final membersInfo = await _repository.getTripMembersInfo(widget.members);
+
+      // Load item counts for each member
+      Map<String, int> itemCounts = {};
+      Map<String, int> completedCounts = {};
+
+      for (var member in membersInfo) {
+        final userId = member['userId'] as String;
+        final items = await _repository.getUserItems(widget.tripId, userId);
+        itemCounts[userId] = items.length;
+        completedCounts[userId] = items
+            .where((item) => item.isCompleted)
+            .length;
+      }
+
+      if (mounted) {
+        setState(() {
+          _membersInfo = membersInfo;
+          _memberItemCounts = itemCounts;
+          _memberCompletedCounts = completedCounts;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lỗi khi tải danh sách thành viên: $e')),
+        );
+      }
+    }
+  }
+
+  void _navigateToMemberChecklist(Map<String, dynamic> memberData) async {
+    await Navigator.push(
       context,
       MaterialPageRoute(
-        // Điều hướng tới MemberChecklistPage và truyền dữ liệu của thành viên đó qua
-        builder: (context) => MemberChecklistPage(memberData: memberData),
+        builder: (context) => MemberChecklistPage(
+          tripId: widget.tripId,
+          userId: memberData['userId'] as String,
+          memberName: memberData['name'] as String,
+        ),
       ),
     );
+    // Refresh counts when returning from detail page
+    _loadMembersInfo();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 20.0),
-      child: ListView.separated(
-        itemCount: memberChecklists.length,
-        itemBuilder: (context, index) {
-          // Build giao diện cho từng thành viên
-          return _buildMemberItem(context, memberChecklists[index]);
-        },
-        separatorBuilder: (context, index) => const SizedBox(height: 15),
+    if (_isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(color: Colors.white),
+      );
+    }
+
+    if (_membersInfo.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.people_outline,
+              size: 64,
+              color: Colors.white.withOpacity(0.5),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Chưa có thành viên nào',
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.7),
+                fontSize: 16,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: _loadMembersInfo,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 20.0),
+        child: ListView.separated(
+          itemCount: _membersInfo.length,
+          itemBuilder: (context, index) {
+            return _buildMemberItem(_membersInfo[index]);
+          },
+          separatorBuilder: (context, index) => const SizedBox(height: 15),
+        ),
       ),
     );
   }
 
-  // Widget cho mỗi card thành viên trong danh sách
-  Widget _buildMemberItem(BuildContext context, Map<String, dynamic> memberData) {
-    // Tính toán tiến độ công việc để hiển thị
-    final items = memberData['items'] as List;
-    final totalCount = items.length;
-    final completedCount = items.where((item) => item['isCompleted'] as bool).length;
+  Widget _buildMemberItem(Map<String, dynamic> memberData) {
+    final userId = memberData['userId'] as String;
+    final totalCount = _memberItemCounts[userId] ?? 0;
+    final completedCount = _memberCompletedCounts[userId] ?? 0;
+    final role = memberData['role'] as String? ?? 'member';
+    final isAdmin = role == 'admin';
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
@@ -83,49 +148,87 @@ class ChecklistTabContent extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // Avatar và Tên
-          Icon(memberData['avatar'] as IconData, color: accentGoldColor, size: 28),
+          // Avatar icon
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: accentGoldColor.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              isAdmin ? Icons.admin_panel_settings : Icons.person,
+              color: accentGoldColor,
+              size: 24,
+            ),
+          ),
           const SizedBox(width: 15),
+          // Name and progress
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        memberData['name'] as String,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (isAdmin) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: accentGoldColor.withOpacity(0.3),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: const Text(
+                          'Admin',
+                          style: TextStyle(
+                            color: accentGoldColor,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: 4),
                 Text(
-                  memberData['name'] as String,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
+                  totalCount > 0
+                      ? '$completedCount/$totalCount items hoàn thành'
+                      : 'Chưa có vật dụng nào',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.7),
+                    fontSize: 13,
                   ),
                 ),
-                if (totalCount > 0) ...[
-                  const SizedBox(height: 4),
-                  // Hiển thị tiến độ (ví dụ: 2/3 items completed)
-                  Text(
-                    '$completedCount/$totalCount items completed',
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.7),
-                      fontSize: 13,
-                    ),
-                  ),
-                ]
               ],
             ),
           ),
-          // Nút "See item"
+          // See items button
           ElevatedButton(
-            onPressed: () {
-              // Gọi hàm điều hướng khi nhấn nút
-              _navigateToMemberChecklist(context, memberData);
-            },
+            onPressed: () => _navigateToMemberChecklist(memberData),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.white,
               foregroundColor: mainBlueColor,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               elevation: 0,
             ),
-            child: const Text('See item'),
+            child: const Text('Xem'),
           ),
         ],
       ),

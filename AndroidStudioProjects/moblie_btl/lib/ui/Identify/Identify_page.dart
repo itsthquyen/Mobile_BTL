@@ -1,44 +1,110 @@
-// lib/ui/identify/identify_page.dart
-
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:moblie_btl/model/id_document.dart';
+import 'package:moblie_btl/repository/id_document_repository.dart';
+import 'document_category_page.dart';
 
-// Màu chủ đạo
-const primaryColor = Color(0xFF153359);
+const Color primaryColor = Color(0xFF153359);
+const Color accentGoldColor = Color(0xFFEAD8B1);
 
-// Màn hình Identify
+/// Trang chính của tính năng Identify - Hiển thị các loại tài liệu định danh
 class IdentifyPage extends StatelessWidget {
   const IdentifyPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // Dữ liệu giả cho danh sách tài liệu
-    final List<Map<String, dynamic>> documents = [
-      {'icon': Icons.public, 'label': 'Passport', 'onTap': () => debugPrint('Open Passport')},
-      {'icon': Icons.credit_card, 'label': 'ID Card', 'onTap': () => debugPrint('Open ID Card')},
-      {'icon': Icons.badge, 'label': 'Driver License', 'onTap': () => debugPrint('Open Driver License')},
-    ];
+    final user = FirebaseAuth.instance.currentUser;
+    final userId = user?.uid ?? '';
+
+    if (userId.isEmpty) {
+      return const Scaffold(
+        body: Center(
+          child: Text('Vui lòng đăng nhập để sử dụng tính năng này'),
+        ),
+      );
+    }
 
     return Scaffold(
       backgroundColor: Colors.grey.shade100,
       body: Column(
         children: [
-          // 1. Header Card (Phần màu xanh đậm)
-          _buildHeader(context),
+          // Header
+          _buildHeader(user),
 
-          // 2. Danh sách Tài liệu
+          // Danh sách các loại tài liệu
           Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.only(top: 20.0, left: 20.0, right: 20.0),
-              itemCount: documents.length,
-              itemBuilder: (context, index) {
-                final doc = documents[index];
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 15.0),
-                  child: _DocumentCard(
-                    icon: doc['icon'] as IconData,
-                    label: doc['label'] as String,
-                    onTap: doc['onTap'] as Function(),
+            child: StreamBuilder<Map<DocumentCategory, int>>(
+              stream: IdDocumentRepository().watchDocumentCounts(userId),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting &&
+                    !snapshot.hasData) {
+                  return const Center(
+                    child: CircularProgressIndicator(color: primaryColor),
+                  );
+                }
+
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.error_outline,
+                          size: 48,
+                          color: Colors.red.withOpacity(0.7),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Lỗi: ${snapshot.error}',
+                          style: TextStyle(color: Colors.grey.shade600),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                final counts = snapshot.data ?? {};
+
+                return ListView(
+                  padding: const EdgeInsets.only(
+                    top: 20.0,
+                    left: 20.0,
+                    right: 20.0,
+                    bottom: 20.0,
                   ),
+                  children: [
+                    _buildDocumentCard(
+                      context: context,
+                      userId: userId,
+                      category: DocumentCategory.passport,
+                      icon: Icons.public,
+                      count: counts[DocumentCategory.passport] ?? 0,
+                    ),
+                    const SizedBox(height: 15),
+                    _buildDocumentCard(
+                      context: context,
+                      userId: userId,
+                      category: DocumentCategory.idCard,
+                      icon: Icons.credit_card,
+                      count: counts[DocumentCategory.idCard] ?? 0,
+                    ),
+                    const SizedBox(height: 15),
+                    _buildDocumentCard(
+                      context: context,
+                      userId: userId,
+                      category: DocumentCategory.driverLicense,
+                      icon: Icons.badge,
+                      count: counts[DocumentCategory.driverLicense] ?? 0,
+                    ),
+                    const SizedBox(height: 15),
+                    _buildDocumentCard(
+                      context: context,
+                      userId: userId,
+                      category: DocumentCategory.other,
+                      icon: Icons.folder,
+                      count: counts[DocumentCategory.other] ?? 0,
+                    ),
+                  ],
                 );
               },
             ),
@@ -48,9 +114,9 @@ class IdentifyPage extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
-    // Lấy tên người dùng giả định
-    const String username = 'Hoang';
+  Widget _buildHeader(User? user) {
+    final displayName =
+        user?.displayName ?? user?.email?.split('@')[0] ?? 'User';
 
     return Container(
       width: double.infinity,
@@ -70,21 +136,27 @@ class IdentifyPage extends StatelessWidget {
             children: [
               // Title
               const Text(
-                'My Documents',
+                'Tài liệu của tôi',
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 32,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              // Avatar Placeholder
+              // Avatar
               CircleAvatar(
                 radius: 18,
                 backgroundColor: Colors.white,
                 child: CircleAvatar(
                   radius: 16,
-                  backgroundColor: Colors.grey.shade300,
-                  // TODO: Thay bằng ảnh avatar thật
+                  backgroundColor: accentGoldColor,
+                  child: Text(
+                    displayName[0].toUpperCase(),
+                    style: const TextStyle(
+                      color: primaryColor,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -92,9 +164,9 @@ class IdentifyPage extends StatelessWidget {
           const SizedBox(height: 5),
 
           // Greeting
-          const Text(
-            'Hi, Hoang! 👋',
-            style: TextStyle(
+          Text(
+            'Xin chào, $displayName! 👋',
+            style: const TextStyle(
               color: Colors.white70,
               fontSize: 18,
               fontWeight: FontWeight.w500,
@@ -104,30 +176,27 @@ class IdentifyPage extends StatelessWidget {
       ),
     );
   }
-}
 
-// --- Widget Dành riêng: Document Card ---
-
-class _DocumentCard extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final Function() onTap;
-
-  const _DocumentCard({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildDocumentCard({
+    required BuildContext context,
+    required String userId,
+    required DocumentCategory category,
+    required IconData icon,
+    required int count,
+  }) {
     return Card(
       elevation: 4,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(15.0),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15.0)),
       child: InkWell(
-        onTap: onTap,
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) =>
+                  DocumentCategoryPage(userId: userId, category: category),
+            ),
+          );
+        },
         borderRadius: BorderRadius.circular(15.0),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 15.0),
@@ -137,7 +206,7 @@ class _DocumentCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(10.0),
                 decoration: BoxDecoration(
-                  color: primaryColor.withOpacity(0.1), // Nền icon nhẹ nhàng
+                  color: primaryColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(10.0),
                 ),
                 child: Icon(icon, color: primaryColor, size: 30),
@@ -145,16 +214,29 @@ class _DocumentCard extends StatelessWidget {
               const SizedBox(width: 20),
 
               // Label
-              Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 18,
-                  color: primaryColor,
-                  fontWeight: FontWeight.w600,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      category.displayName,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        color: primaryColor,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '$count tài liệu',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-
-              const Spacer(),
 
               // Arrow
               const Icon(Icons.arrow_forward_ios, color: Colors.grey, size: 18),

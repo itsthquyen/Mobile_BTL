@@ -1,13 +1,18 @@
 // lib/ui/Home/TripDetails/Vote/add_vote.dart
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:moblie_btl/repository/vote_repository.dart';
+import 'package:moblie_btl/services/notification_service.dart';
 
 const Color mainBlueColor = Color(0xFF153359);
 const Color darkFieldColor = Color(0xFF2C436D);
 const Color lightTextColor = Colors.white;
 
 class AddVoteLocationModal extends StatefulWidget {
-  const AddVoteLocationModal({super.key});
+  final String tripId;
+
+  const AddVoteLocationModal({super.key, required this.tripId});
 
   @override
   State<AddVoteLocationModal> createState() => _AddVoteLocationModalState();
@@ -17,8 +22,30 @@ class _AddVoteLocationModalState extends State<AddVoteLocationModal> {
   final TextEditingController _locationNameController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
   final TextEditingController _imageUrlController = TextEditingController();
+  final VoteRepository _repository = VoteRepository();
+  final NotificationService _notificationService = NotificationService();
 
-  final _formKey = GlobalKey<FormState>(); // Key để validate form
+  final _formKey = GlobalKey<FormState>();
+  bool _isSubmitting = false;
+  String? _tripName;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTripName();
+  }
+
+  Future<void> _loadTripName() async {
+    final tripDoc = await FirebaseFirestore.instance
+        .collection('trips')
+        .doc(widget.tripId)
+        .get();
+    if (tripDoc.exists && mounted) {
+      setState(() {
+        _tripName = tripDoc.data()?['name'] ?? 'Chuyến đi';
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -28,23 +55,61 @@ class _AddVoteLocationModalState extends State<AddVoteLocationModal> {
     super.dispose();
   }
 
-  void _saveLocation() {
-    // Kiểm tra xem form có hợp lệ không
-    if (_formKey.currentState!.validate()) {
-      // Nếu hợp lệ, xử lý lưu dữ liệu
-      print('Location Name: ${_locationNameController.text}');
-      print('Description: ${_descriptionController.text}');
-      print('Image URL: ${_imageUrlController.text}');
+  Future<void> _saveLocation() async {
+    if (!_formKey.currentState!.validate()) return;
 
-      // Đóng modal sau khi lưu
-      Navigator.pop(context);
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Bạn cần đăng nhập để thêm địa điểm')),
+      );
+      return;
+    }
+
+    setState(() => _isSubmitting = true);
+
+    try {
+      await _repository.addVoteOption(
+        tripId: widget.tripId,
+        location: _locationNameController.text.trim(),
+        description: _descriptionController.text.trim().isNotEmpty
+            ? _descriptionController.text.trim()
+            : null,
+        imageUrl: _imageUrlController.text.trim().isNotEmpty
+            ? _imageUrlController.text.trim()
+            : null,
+        createdBy: currentUser.uid,
+      );
+
+      // Gửi thông báo cho các thành viên khác trong chuyến đi
+      await _notificationService.notifyVoteCreated(
+        tripId: widget.tripId,
+        tripName: _tripName ?? 'Chuyến đi',
+        locationName: _locationNameController.text.trim(),
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Đã thêm địa điểm bình chọn!')),
+        );
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Lỗi: $e')));
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      // Padding để modal không bị che bởi status bar
       padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
       child: Scaffold(
         backgroundColor: mainBlueColor,
@@ -52,9 +117,7 @@ class _AddVoteLocationModalState extends State<AddVoteLocationModal> {
           key: _formKey,
           child: Column(
             children: [
-              // 1. Header của modal
               _buildCustomHeader(context),
-              // 2. Nội dung form, cho phép cuộn
               Expanded(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.all(20),
@@ -63,12 +126,12 @@ class _AddVoteLocationModalState extends State<AddVoteLocationModal> {
                     children: [
                       _buildTextField(
                         controller: _locationNameController,
-                        label: 'Location Name',
-                        hint: 'e.g., Tokyo Skytree',
+                        label: 'Tên địa điểm',
+                        hint: 'VD: Tokyo Skytree',
                         icon: Icons.location_on_outlined,
                         validator: (value) {
                           if (value == null || value.trim().isEmpty) {
-                            return 'Please enter a location name.';
+                            return 'Vui lòng nhập tên địa điểm';
                           }
                           return null;
                         },
@@ -76,17 +139,17 @@ class _AddVoteLocationModalState extends State<AddVoteLocationModal> {
                       const SizedBox(height: 25),
                       _buildTextField(
                         controller: _imageUrlController,
-                        label: 'Image URL (Optional)',
+                        label: 'URL hình ảnh (Tùy chọn)',
                         hint: 'https://...',
                         icon: Icons.image_outlined,
                       ),
                       const SizedBox(height: 25),
                       _buildTextField(
                         controller: _descriptionController,
-                        label: 'Description (Optional)',
-                        hint: 'A few words about this place...',
+                        label: 'Mô tả (Tùy chọn)',
+                        hint: 'Vài dòng về địa điểm này...',
                         icon: Icons.description_outlined,
-                        maxLines: 4, // Cho phép nhập nhiều dòng
+                        maxLines: 4,
                       ),
                     ],
                   ),
@@ -95,7 +158,6 @@ class _AddVoteLocationModalState extends State<AddVoteLocationModal> {
             ],
           ),
         ),
-        // 3. Nút Add cố định ở dưới
         bottomNavigationBar: Padding(
           padding: EdgeInsets.only(
             bottom: MediaQuery.of(context).padding.bottom + 10,
@@ -109,7 +171,6 @@ class _AddVoteLocationModalState extends State<AddVoteLocationModal> {
     );
   }
 
-  // Widget cho header
   Widget _buildCustomHeader(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(5, 15, 20, 10),
@@ -117,21 +178,29 @@ class _AddVoteLocationModalState extends State<AddVoteLocationModal> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel', style: TextStyle(color: lightTextColor, fontSize: 16)),
+            onPressed: _isSubmitting ? null : () => Navigator.pop(context),
+            child: Text(
+              'Hủy',
+              style: TextStyle(
+                color: _isSubmitting ? Colors.white38 : lightTextColor,
+                fontSize: 16,
+              ),
+            ),
           ),
           const Text(
-            'Add Vote Location',
-            style: TextStyle(color: lightTextColor, fontWeight: FontWeight.bold, fontSize: 17),
+            'Thêm địa điểm',
+            style: TextStyle(
+              color: lightTextColor,
+              fontWeight: FontWeight.bold,
+              fontSize: 17,
+            ),
           ),
-          // Giữ khoảng trống cân bằng
           const SizedBox(width: 80),
         ],
       ),
     );
   }
 
-  // Widget tái sử dụng cho các trường nhập liệu
   Widget _buildTextField({
     required TextEditingController controller,
     required String label,
@@ -145,15 +214,23 @@ class _AddVoteLocationModalState extends State<AddVoteLocationModal> {
       children: [
         Text(
           label,
-          style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.w500, fontSize: 15),
+          style: const TextStyle(
+            color: Colors.white70,
+            fontWeight: FontWeight.w500,
+            fontSize: 15,
+          ),
         ),
         const SizedBox(height: 8),
         TextFormField(
           controller: controller,
+          enabled: !_isSubmitting,
           style: const TextStyle(color: lightTextColor, fontSize: 16),
           maxLines: maxLines,
           decoration: InputDecoration(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 15,
+              vertical: 15,
+            ),
             hintText: hint,
             hintStyle: const TextStyle(color: Colors.white38),
             prefixIcon: Icon(icon, color: Colors.white70),
@@ -163,7 +240,6 @@ class _AddVoteLocationModalState extends State<AddVoteLocationModal> {
               borderRadius: BorderRadius.circular(10),
               borderSide: BorderSide.none,
             ),
-            // Hiển thị viền đỏ khi có lỗi validate
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
               borderSide: const BorderSide(color: Colors.red, width: 1),
@@ -179,19 +255,26 @@ class _AddVoteLocationModalState extends State<AddVoteLocationModal> {
     );
   }
 
-  // Widget cho nút Add
   Widget _buildAddButton() {
     return ElevatedButton(
-      onPressed: _saveLocation,
+      onPressed: _isSubmitting ? null : _saveLocation,
       style: ElevatedButton.styleFrom(
         backgroundColor: Colors.white,
         foregroundColor: mainBlueColor,
+        disabledBackgroundColor: Colors.white.withOpacity(0.5),
         minimumSize: const Size(double.infinity, 55),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
-      child: const Text('Add Location', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+      child: _isSubmitting
+          ? const SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : const Text(
+              'Thêm địa điểm',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
     );
   }
 }

@@ -68,19 +68,30 @@ class _TripDetailsPageState extends State<TripDetailsPage> {
       builder: (ctx) => AlertDialog(
         backgroundColor: mainBlueColor, // Nền tối
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-        title: const Text('Chia sẻ mã tham gia', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: const Text(
+          'Chia sẻ mã tham gia',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('Gửi mã này cho bạn bè để họ tham gia chuyến đi:', style: TextStyle(color: Colors.white70)),
+            const Text(
+              'Gửi mã này cho bạn bè để họ tham gia chuyến đi:',
+              style: TextStyle(color: Colors.white70),
+            ),
             const SizedBox(height: 20),
             GestureDetector(
               onTap: () {
                 Clipboard.setData(ClipboardData(text: joinCode));
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Đã sao chép vào bộ nhớ tạm!')));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Đã sao chép vào bộ nhớ tạm!')),
+                );
               },
               child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 10,
+                  horizontal: 20,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFF2C436D), // darkFieldColor
                   borderRadius: BorderRadius.circular(8),
@@ -88,7 +99,15 @@ class _TripDetailsPageState extends State<TripDetailsPage> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(joinCode, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: 2, color: Colors.white)),
+                    Text(
+                      joinCode,
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 2,
+                        color: Colors.white,
+                      ),
+                    ),
                     const SizedBox(width: 10),
                     const Icon(Icons.copy, size: 20, color: Colors.white70),
                   ],
@@ -114,8 +133,14 @@ class _TripDetailsPageState extends State<TripDetailsPage> {
       builder: (ctx) => AlertDialog(
         backgroundColor: mainBlueColor,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-        title: const Text('Xóa chuyến đi?', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        content: const Text('Hành động này không thể hoàn tác. Toàn bộ dữ liệu của chuyến đi sẽ bị xóa vĩnh viễn.', style: TextStyle(color: Colors.white70)),
+        title: const Text(
+          'Xóa chuyến đi?',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+        content: const Text(
+          'Hành động này không thể hoàn tác. Toàn bộ dữ liệu của chuyến đi sẽ bị xóa vĩnh viễn.',
+          style: TextStyle(color: Colors.white70),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
@@ -128,7 +153,9 @@ class _TripDetailsPageState extends State<TripDetailsPage> {
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red[700],
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
             ),
             child: const Text('Xóa', style: TextStyle(color: Colors.white)),
           ),
@@ -140,27 +167,35 @@ class _TripDetailsPageState extends State<TripDetailsPage> {
   // --- HÀM XÓA CHUYẾN ĐI KHỎI FIRESTORE ---
   Future<void> _deleteTrip() async {
     try {
-      await FirebaseFirestore.instance.collection('trips').doc(widget.trip.id).delete();
+      await FirebaseFirestore.instance
+          .collection('trips')
+          .doc(widget.trip.id)
+          .delete();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Đã xóa chuyến đi thành công.')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Đã xóa chuyến đi thành công.')),
+        );
         Navigator.of(context).pop();
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi khi xóa chuyến đi: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Lỗi khi xóa chuyến đi: $e')));
       }
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
     bool isAdmin = currentUserRole == 'admin';
 
-    SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.light,
-    ));
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light,
+      ),
+    );
 
     return Scaffold(
       backgroundColor: mainBlueColor,
@@ -189,12 +224,13 @@ class _TripDetailsPageState extends State<TripDetailsPage> {
                   children: [
                     const SizedBox(height: 20),
                     _buildCustomTabBar(),
-                    Expanded(
-                      child: _buildPageContent(),
-                    ),
+                    Expanded(child: _buildPageContent()),
                   ],
                 ),
-                if (isAdmin)
+                // Show add button:
+                // - Admin can add to all tabs
+                // - All members can add to Votes tab (index 3)
+                if (isAdmin || _selectedIndex == 3)
                   Align(
                     alignment: Alignment.bottomCenter,
                     child: Padding(
@@ -217,11 +253,22 @@ class _TripDetailsPageState extends State<TripDetailsPage> {
       case 1:
         return ExpensesTabContent(tripId: widget.trip.id);
       case 2:
-        return const ChecklistTabContent();
+        return ChecklistTabContent(
+          tripId: widget.trip.id,
+          members: widget.trip.members,
+        );
       case 3:
-        return const VotesTabContent();
+        return VotesTabContent(
+          tripId: widget.trip.id,
+          members: widget.trip.members,
+        );
       default:
-        return const Center(child: Text('Content Placeholder', style: TextStyle(color: Colors.white)));
+        return const Center(
+          child: Text(
+            'Content Placeholder',
+            style: TextStyle(color: Colors.white),
+          ),
+        );
     }
   }
 
@@ -259,9 +306,9 @@ class _TripDetailsPageState extends State<TripDetailsPage> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) {
-        return const FractionallySizedBox(
+        return FractionallySizedBox(
           heightFactor: 0.9,
-          child: AddVoteLocationModal(),
+          child: AddVoteLocationModal(tripId: widget.trip.id),
         );
       },
     );
@@ -282,13 +329,21 @@ class _TripDetailsPageState extends State<TripDetailsPage> {
               Row(
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.arrow_back_ios, color: Colors.white, size: 20),
+                    icon: const Icon(
+                      Icons.arrow_back_ios,
+                      color: Colors.white,
+                      size: 20,
+                    ),
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                   const SizedBox(width: 4),
                   const Text(
                     "Tripsync",
-                    style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w400),
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w400,
+                    ),
                   ),
                 ],
               ),
@@ -298,19 +353,39 @@ class _TripDetailsPageState extends State<TripDetailsPage> {
                   const SizedBox(width: 8),
                   PopupMenuButton<String>(
                     onSelected: _onMenuItemSelected,
-                    icon: const Icon(Icons.more_horiz, color: Colors.white, size: 24),
+                    icon: const Icon(
+                      Icons.more_horiz,
+                      color: Colors.white,
+                      size: 24,
+                    ),
                     color: mainBlueColor, // Nền cho menu
-                    itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-                      const PopupMenuItem<String>(
-                        value: 'share',
-                        child: ListTile(leading: Icon(Icons.share, color: Colors.white), title: Text('Chia sẻ mã tham gia', style: TextStyle(color: Colors.white))),
-                      ),
-                      if (isAdmin)
-                        const PopupMenuItem<String>(
-                          value: 'delete',
-                          child: ListTile(leading: Icon(Icons.delete_forever, color: Colors.red), title: Text('Xóa chuyến đi', style: TextStyle(color: Colors.red))),
-                        ),
-                    ],
+                    itemBuilder: (BuildContext context) =>
+                        <PopupMenuEntry<String>>[
+                          const PopupMenuItem<String>(
+                            value: 'share',
+                            child: ListTile(
+                              leading: Icon(Icons.share, color: Colors.white),
+                              title: Text(
+                                'Chia sẻ mã tham gia',
+                                style: TextStyle(color: Colors.white),
+                              ),
+                            ),
+                          ),
+                          if (isAdmin)
+                            const PopupMenuItem<String>(
+                              value: 'delete',
+                              child: ListTile(
+                                leading: Icon(
+                                  Icons.delete_forever,
+                                  color: Colors.red,
+                                ),
+                                title: Text(
+                                  'Xóa chuyến đi',
+                                  style: TextStyle(color: Colors.red),
+                                ),
+                              ),
+                            ),
+                        ],
                   ),
                 ],
               ),
@@ -320,8 +395,12 @@ class _TripDetailsPageState extends State<TripDetailsPage> {
           const Icon(Icons.beach_access, size: 60, color: Color(0xFFFFCC80)),
           const SizedBox(height: 10),
           Text(
-            widget.trip.name, 
-            style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+            widget.trip.name,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ],
       ),
@@ -357,7 +436,9 @@ class _TripDetailsPageState extends State<TripDetailsPage> {
                   _tabs[index],
                   style: TextStyle(
                     color: isSelected ? mainBlueColor : Colors.white,
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    fontWeight: isSelected
+                        ? FontWeight.bold
+                        : FontWeight.normal,
                     fontSize: 13,
                   ),
                 ),
@@ -370,17 +451,20 @@ class _TripDetailsPageState extends State<TripDetailsPage> {
   }
 
   Widget _buildAddButton() {
-    String label = _selectedIndex == 0 ? "Add Schedule" :
-    _selectedIndex == 1 ? "Add Expense" :
-    _selectedIndex == 2 ? "Add Item" :
-    "Add Location";
+    String label = _selectedIndex == 0
+        ? "Add Schedule"
+        : _selectedIndex == 1
+        ? "Add Expense"
+        : _selectedIndex == 2
+        ? "Add Item"
+        : "Add Location";
     return InkWell(
       onTap: () {
         if (_selectedIndex == 0) {
           _showAddScheduleModal(context);
         } else if (_selectedIndex == 1) {
           _showAddExpenseModal(context);
-        } else if (_selectedIndex ==  2) {
+        } else if (_selectedIndex == 2) {
           print("Add Checklist Item tapped");
         } else if (_selectedIndex == 3) {
           _showAddVoteModal(context);
@@ -402,7 +486,11 @@ class _TripDetailsPageState extends State<TripDetailsPage> {
             const SizedBox(width: 10),
             Text(
               label,
-              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 16),
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+                fontSize: 16,
+              ),
             ),
           ],
         ),

@@ -31,27 +31,32 @@ class _OnboardingPageState extends State<OnboardingPage> {
     OnboardingInfo(
       icon: Icons.travel_explore,
       title: 'Tìm chuyến bay',
-      description: 'Tìm kiếm chuyến bay nhanh chóng đến mọi điểm đến bạn mong muốn.',
+      description:
+          'Tìm kiếm chuyến bay nhanh chóng đến mọi điểm đến bạn mong muốn.',
     ),
     OnboardingInfo(
       icon: Icons.add_location_alt_outlined,
       title: 'Lên kế hoạch phiêu lưu',
-      description: 'Thêm các chuyến đi mới, sắp xếp một cách dễ dàng và hiệu quả.',
+      description:
+          'Thêm các chuyến đi mới, sắp xếp một cách dễ dàng và hiệu quả.',
     ),
     OnboardingInfo(
       icon: Icons.edit_calendar_outlined,
       title: 'Duy trì lịch trình',
-      description: 'Quản lý các chuyến đi, nhận thông báo và không bỏ lỡ kế hoạch nào.',
+      description:
+          'Quản lý các chuyến đi, nhận thông báo và không bỏ lỡ kế hoạch nào.',
     ),
     OnboardingInfo(
       icon: Icons.wallet_outlined,
       title: 'Theo dõi chi phí',
-      description: 'Ghi lại chi phí, thiết lập ngân sách và quản lý tài chính chặt chẽ.',
+      description:
+          'Ghi lại chi phí, thiết lập ngân sách và quản lý tài chính chặt chẽ.',
     ),
     OnboardingInfo(
       icon: Icons.playlist_add_check_circle_outlined,
       title: 'Hoàn thành danh sách',
-      description: 'Tạo danh sách những việc cần làm để không bỏ sót bất kỳ mục nào.',
+      description:
+          'Tạo danh sách những việc cần làm để không bỏ sót bất kỳ mục nào.',
     ),
   ];
 
@@ -140,7 +145,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              'Your ultimate journey planner',
+                              'Người đồng hành hoàn hảo cho mọi chuyến đi',
                               style: TextStyle(
                                 color: Colors.white.withOpacity(0.7),
                                 fontSize: 14,
@@ -180,7 +185,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
                             ),
                           ),
                           onPressed: () {
-                            if (_currentPageIndex == onboardingData.length - 1) {
+                            if (_currentPageIndex ==
+                                onboardingData.length - 1) {
                               _onDone();
                             } else {
                               controller.nextPage(
@@ -210,7 +216,11 @@ class _OnboardingPageState extends State<OnboardingPage> {
               top: 40,
               left: 16,
               child: IconButton(
-                icon: const Icon(Icons.arrow_back_ios, color: Colors.white, size: 20),
+                icon: const Icon(
+                  Icons.arrow_back_ios,
+                  color: Colors.white,
+                  size: 20,
+                ),
                 onPressed: () {
                   controller.previousPage(
                     duration: const Duration(milliseconds: 400),

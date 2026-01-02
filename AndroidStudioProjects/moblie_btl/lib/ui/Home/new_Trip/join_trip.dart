@@ -3,6 +3,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:moblie_btl/services/notification_service.dart';
 
 // ===== CONSTANTS =====
 const primaryColor = Color(0xFF153359);
@@ -17,6 +18,7 @@ class JoinTripPage extends StatefulWidget {
 
 class _JoinTripPageState extends State<JoinTripPage> {
   final TextEditingController _linkController = TextEditingController();
+  final NotificationService _notificationService = NotificationService();
   bool _isLoading = false;
 
   String _displayName = '';
@@ -81,22 +83,29 @@ class _JoinTripPageState extends State<JoinTripPage> {
 
       final tripDoc = query.docs.first;
       final tripId = tripDoc.id;
+      final tripName = tripDoc.data()['name'] ?? 'Chuyến đi';
 
-      final members =
-      Map<String, dynamic>.from(tripDoc.data()['members'] ?? {});
+      final members = Map<String, dynamic>.from(
+        tripDoc.data()['members'] ?? {},
+      );
 
       if (members.containsKey(user.uid)) {
         _showMessage('Bạn đã tham gia chuyến đi này rồi');
         return;
       }
 
-      await FirebaseFirestore.instance
-          .collection('trips')
-          .doc(tripId)
-          .update({
+      await FirebaseFirestore.instance.collection('trips').doc(tripId).update({
         'members.${user.uid}': 'member',
         'updatedAt': FieldValue.serverTimestamp(),
       });
+
+      // Gửi thông báo cho các thành viên hiện có trong chuyến đi
+      print('📢 JoinTripPage: Calling notifyMemberJoined');
+      await _notificationService.notifyMemberJoined(
+        tripId: tripId,
+        tripName: tripName,
+        memberName: _displayName.isNotEmpty ? _displayName : 'Thành viên mới',
+      );
 
       _showMessage('🎉 Tham gia chuyến đi thành công!');
       Navigator.pop(context);
@@ -180,12 +189,10 @@ class _JoinTripPageState extends State<JoinTripPage> {
           Expanded(
             child: Container(
               width: double.infinity,
-              padding:
-              const EdgeInsets.symmetric(horizontal: 30, vertical: 40),
+              padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 40),
               decoration: const BoxDecoration(
                 color: Colors.white,
-                borderRadius:
-                BorderRadius.vertical(top: Radius.circular(30)),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -207,8 +214,7 @@ class _JoinTripPageState extends State<JoinTripPage> {
 
                   const Text(
                     'Mã mời',
-                    style: TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.bold),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 10),
 
@@ -219,15 +225,19 @@ class _JoinTripPageState extends State<JoinTripPage> {
                       filled: true,
                       fillColor: inputFillColor,
                       contentPadding: const EdgeInsets.symmetric(
-                          vertical: 18, horizontal: 20),
+                        vertical: 18,
+                        horizontal: 20,
+                      ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide.none,
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide:
-                        const BorderSide(color: primaryColor, width: 2),
+                        borderSide: const BorderSide(
+                          color: primaryColor,
+                          width: 2,
+                        ),
                       ),
                     ),
                   ),
@@ -245,15 +255,15 @@ class _JoinTripPageState extends State<JoinTripPage> {
                         ),
                       ),
                       child: _isLoading
-                          ? const CircularProgressIndicator(
-                          color: Colors.white)
+                          ? const CircularProgressIndicator(color: Colors.white)
                           : const Text(
-                        'Tham gia',
-                        style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white),
-                      ),
+                              'Tham gia',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
                     ),
                   ),
                 ],

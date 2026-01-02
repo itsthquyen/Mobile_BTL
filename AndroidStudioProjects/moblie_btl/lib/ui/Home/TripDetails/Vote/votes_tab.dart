@@ -1,100 +1,150 @@
 // lib/ui/Home/TripDetails/Vote/votes_tab.dart
 import 'package:flutter/material.dart';
-import 'dart:math'; // Để sử dụng cho màu sắc ngẫu nhiên
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:moblie_btl/repository/vote_repository.dart';
+import 'package:moblie_btl/model/vote_option.dart';
+import 'dart:math';
 
-// Giả định màu sắc từ các file khác
+// Color constants
 const Color mainBlueColor = Color(0xFF153359);
 const Color accentGoldColor = Color(0xFFEAD8B1);
 
-// --- 1. Dữ liệu mẫu ---
-final List<Map<String, dynamic>> voteOptions = [
-  {
-    'id': 1,
-    'location': 'Fushimi Inari Shrine',
-    'imageUrl': 'https://example.com/fushimi_inari.jpg',
-    'votes': ['Duy', 'Lộc', 'Quyên'],
-  },
-  {
-    'id': 2,
-    'location': 'Arashiyama Bamboo Grove',
-    'imageUrl': 'https://example.com/arashiyama.jpg',
-    'votes': ['Duy', 'Lộc'],
-  },
-  {
-    'id': 3,
-    'location': 'Kinkaku-ji Temple',
-    'imageUrl': 'https://example.com/kinkaku_ji.jpg',
-    'votes': ['Quyên'],
-  },
-  {
-    'id': 4,
-    'location': 'Tokyo Skytree',
-    'imageUrl': 'https://example.com/tokyo_skytree.jpg',
-    'votes': [],
-  },
-];
-
-const String currentUser = 'Duy';
-
 class VotesTabContent extends StatefulWidget {
-  const VotesTabContent({super.key});
+  final String tripId;
+  final Map<String, dynamic> members;
+
+  const VotesTabContent({
+    super.key,
+    required this.tripId,
+    required this.members,
+  });
 
   @override
   State<VotesTabContent> createState() => _VotesTabContentState();
 }
 
 class _VotesTabContentState extends State<VotesTabContent> {
+  final VoteRepository _repository = VoteRepository();
+  final String? _currentUserId = FirebaseAuth.instance.currentUser?.uid;
 
-  void _toggleVote(int optionId) {
-    setState(() {
-      final option = voteOptions.firstWhere((opt) => opt['id'] == optionId);
-      // *** SỬA LỖI 1: Ép kiểu an toàn ***
-      // Lấy ra dưới dạng List<dynamic> trước
-      final votesListDynamic = option['votes'] as List;
-      // Sau đó chuyển đổi nó thành List<String>
-      final votes = List<String>.from(votesListDynamic);
+  // Cache for member names
+  Map<String, String> _memberNames = {};
 
-      if (votes.contains(currentUser)) {
-        votes.remove(currentUser);
-      } else {
-        votes.add(currentUser);
+  @override
+  void initState() {
+    super.initState();
+    _loadMemberNames();
+  }
+
+  Future<void> _loadMemberNames() async {
+    try {
+      final names = await _repository.getMemberNames(
+        widget.members.keys.toList().cast<String>(),
+      );
+      if (mounted) {
+        setState(() {
+          _memberNames = names;
+        });
       }
+    } catch (e) {
+      // Ignore errors, will use fallback names
+    }
+  }
 
-      // Gán lại danh sách đã thay đổi vào map
-      option['votes'] = votes;
+  Future<void> _toggleVote(String optionId) async {
+    if (_currentUserId == null) return;
 
-      voteOptions.sort((a, b) =>
-          (b['votes'] as List).length.compareTo((a['votes'] as List).length));
-    });
+    try {
+      await _repository.toggleVote(widget.tripId, optionId, _currentUserId);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Lỗi khi bình chọn: $e')));
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    voteOptions.sort((a, b) =>
-        (b['votes'] as List).length.compareTo((a['votes'] as List).length));
+    return StreamBuilder<List<VoteOption>>(
+      stream: _repository.watchVoteOptions(widget.tripId),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(
+            child: CircularProgressIndicator(color: Colors.white),
+          );
+        }
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 80),
-      child: ListView.separated(
-        itemCount: voteOptions.length,
-        itemBuilder: (context, index) {
-          return _buildVoteCard(voteOptions[index]);
-        },
-        separatorBuilder: (context, index) => const SizedBox(height: 15),
-      ),
+        if (snapshot.hasError) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.error_outline, size: 48, color: Colors.red.shade300),
+                const SizedBox(height: 16),
+                Text(
+                  'Lỗi: ${snapshot.error}',
+                  style: const TextStyle(color: Colors.white70),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          );
+        }
+
+        final options = snapshot.data ?? [];
+
+        // Sort by vote count (descending)
+        options.sort((a, b) => b.votes.length.compareTo(a.votes.length));
+
+        if (options.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.how_to_vote_outlined,
+                  size: 64,
+                  color: Colors.white.withOpacity(0.3),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Chưa có địa điểm nào để bình chọn.\nNhấn "Add Location" để thêm!',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.5),
+                    fontSize: 14,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          );
+        }
+
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 80),
+          child: ListView.separated(
+            itemCount: options.length,
+            itemBuilder: (context, index) {
+              return _buildVoteCard(options[index]);
+            },
+            separatorBuilder: (context, index) => const SizedBox(height: 15),
+          ),
+        );
+      },
     );
   }
 
-  Widget _buildVoteCard(Map<String, dynamic> option) {
-    // *** SỬA LỖI 2: Ép kiểu an toàn (lặp lại) ***
-    final votes = List<String>.from(option['votes'] as List);
-    final bool hasVoted = votes.contains(currentUser);
+  Widget _buildVoteCard(VoteOption option) {
+    final bool hasVoted =
+        _currentUserId != null && option.votes.contains(_currentUserId);
 
     return GestureDetector(
-      onTap: () => _toggleVote(option['id'] as int),
+      onTap: () => _toggleVote(option.id),
+      onLongPress: () => _showOptionsDialog(option),
       child: Container(
-        height: 80,
-        padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+        padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 12.0),
         decoration: BoxDecoration(
           color: Colors.black.withOpacity(0.25),
           borderRadius: BorderRadius.circular(15),
@@ -104,7 +154,7 @@ class _VotesTabContentState extends State<VotesTabContent> {
         ),
         child: Row(
           children: [
-            _buildVoteProgress(votes.length, hasVoted),
+            _buildVoteProgress(option.votes.length, hasVoted),
             const SizedBox(width: 15),
             Expanded(
               child: Column(
@@ -112,7 +162,7 @@ class _VotesTabContentState extends State<VotesTabContent> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    option['location'] as String,
+                    option.location,
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 16,
@@ -121,14 +171,87 @@ class _VotesTabContentState extends State<VotesTabContent> {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
+                  if (option.description != null &&
+                      option.description!.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      option.description!,
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.6),
+                        fontSize: 13,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
                   const SizedBox(height: 8),
-                  if (votes.isNotEmpty)
-                    _buildVoterAvatars(votes),
+                  if (option.votes.isNotEmpty) _buildVoterAvatars(option.votes),
                 ],
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showOptionsDialog(VoteOption option) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: mainBlueColor,
+        title: Text(
+          option.location,
+          style: const TextStyle(color: Colors.white),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '${option.votes.length} bình chọn',
+              style: const TextStyle(color: Colors.white70),
+            ),
+            if (option.votes.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              const Text(
+                'Người đã bình chọn:',
+                style: TextStyle(color: Colors.white70, fontSize: 13),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: option.votes.map((odau) {
+                  final name = _memberNames[odau] ?? 'Người dùng';
+                  return Chip(
+                    backgroundColor: accentGoldColor.withOpacity(0.2),
+                    label: Text(
+                      name,
+                      style: const TextStyle(color: Colors.white, fontSize: 12),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ],
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Đóng', style: TextStyle(color: Colors.white70)),
+          ),
+          // Only show delete if user created this option
+          if (option.createdBy == _currentUserId)
+            ElevatedButton(
+              onPressed: () async {
+                Navigator.pop(ctx);
+                await _repository.deleteVoteOption(widget.tripId, option.id);
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              child: const Text('Xóa', style: TextStyle(color: Colors.white)),
+            ),
+        ],
       ),
     );
   }
@@ -155,29 +278,63 @@ class _VotesTabContentState extends State<VotesTabContent> {
     );
   }
 
-  Widget _buildVoterAvatars(List<String> voters) {
-    final random = Random();
-    final colors = [Colors.red, Colors.blue, Colors.green, Colors.purple, Colors.orange];
+  Widget _buildVoterAvatars(List<String> voterIds) {
+    // Use consistent colors based on user ID hash
+    final colors = [
+      Colors.red,
+      Colors.blue,
+      Colors.green,
+      Colors.purple,
+      Colors.orange,
+      Colors.teal,
+      Colors.pink,
+    ];
 
     return SizedBox(
       height: 24,
       child: Stack(
-        children: List.generate(
-          min(voters.length, 4),
-              (index) {
-            return Positioned(
-              left: (18.0 * index),
-              child: CircleAvatar(
-                radius: 12,
-                backgroundColor: colors[random.nextInt(colors.length)],
-                child: Text(
-                  voters[index][0].toUpperCase(),
-                  style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+        children:
+            List.generate(min(voterIds.length, 4), (index) {
+              final odau = voterIds[index];
+              final name = _memberNames[odau] ?? 'U';
+              final colorIndex = odau.hashCode.abs() % colors.length;
+
+              return Positioned(
+                left: (18.0 * index),
+                child: CircleAvatar(
+                  radius: 12,
+                  backgroundColor: colors[colorIndex],
+                  child: Text(
+                    name.isNotEmpty ? name[0].toUpperCase() : 'U',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
-              ),
-            );
-          },
-        ),
+              );
+            })..addAll(
+              voterIds.length > 4
+                  ? [
+                      Positioned(
+                        left: (18.0 * 4),
+                        child: CircleAvatar(
+                          radius: 12,
+                          backgroundColor: Colors.grey.shade600,
+                          child: Text(
+                            '+${voterIds.length - 4}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ]
+                  : [],
+            ),
       ),
     );
   }

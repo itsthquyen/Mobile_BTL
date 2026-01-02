@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:moblie_btl/ui/Profile/PictureUser.dart';
+import 'package:moblie_btl/services/notification_service.dart';
 import '../login/login_page.dart';
 import 'User.dart';
 
@@ -17,6 +18,7 @@ class ProfilePage extends StatefulWidget {
 class _ProfilePageState extends State<ProfilePage> {
   UserProfile? userProfile;
   bool isLoading = true;
+  final NotificationService _notificationService = NotificationService();
 
   @override
   void initState() {
@@ -54,10 +56,7 @@ class _ProfilePageState extends State<ProfilePage> {
       return;
     }
 
-    await FirebaseFirestore.instance
-        .collection('users')
-        .doc(user.uid)
-        .update({
+    await FirebaseFirestore.instance.collection('users').doc(user.uid).update({
       'displayName': name,
       'phone': phone,
       'updatedAt': FieldValue.serverTimestamp(),
@@ -72,6 +71,9 @@ class _ProfilePageState extends State<ProfilePage> {
         avatarUrl: userProfile!.avatarUrl,
       );
     });
+
+    // Gửi thông báo cá nhân về việc cập nhật profile
+    await _notificationService.notifyProfileUpdated();
 
     _showSuccessDialog();
   }
@@ -92,15 +94,11 @@ class _ProfilePageState extends State<ProfilePage> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: const [
-                Icon(Icons.check_circle,
-                    color: Colors.green, size: 70),
+                Icon(Icons.check_circle, color: Colors.green, size: 70),
                 SizedBox(height: 15),
                 Text(
                   'Cập nhật thành công!',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
@@ -118,18 +116,16 @@ class _ProfilePageState extends State<ProfilePage> {
 
   /// ===== EDIT PROFILE =====
   void _showEditProfileDialog() {
-    final nameController =
-    TextEditingController(text: userProfile!.displayName);
-    final phoneController =
-    TextEditingController(text: userProfile!.phone);
+    final nameController = TextEditingController(
+      text: userProfile!.displayName,
+    );
+    final phoneController = TextEditingController(text: userProfile!.phone);
 
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
         title: const Text('Chỉnh sửa thông tin'),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(15),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -183,23 +179,24 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   /// ===== EDIT AVATAR =====
-  void _showEditPictureOptions(BuildContext context) {
-    showModalBottomSheet(
+  void _showEditPictureOptions(BuildContext context) async {
+    final result = await showModalBottomSheet<bool>(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (_) => const EditPictureOptions(),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => EditPictureOptions(userId: userProfile!.uid),
     );
+
+    if (result == true) {
+      _loadUserProfile();
+    }
   }
 
   /// ================= BUILD =================
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     return Scaffold(
@@ -209,8 +206,7 @@ class _ProfilePageState extends State<ProfilePage> {
           children: [
             _buildHeader(),
             Padding(
-              padding:
-              const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
               child: Column(
                 children: [
                   _ProfileInfoCard(
@@ -244,8 +240,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       ),
                       child: const Text(
                         'Đăng xuất',
-                        style:
-                        TextStyle(fontSize: 20, color: Colors.white),
+                        style: TextStyle(fontSize: 20, color: Colors.white),
                       ),
                     ),
                   ),
@@ -260,8 +255,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Widget _buildHeader() {
     return Container(
-      padding:
-      const EdgeInsets.only(top: 50, bottom: 30, left: 20, right: 20),
+      padding: const EdgeInsets.only(top: 50, bottom: 30, left: 20, right: 20),
       decoration: const BoxDecoration(
         color: primaryColor,
         borderRadius: BorderRadius.only(
@@ -299,7 +293,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   backgroundImage: userProfile!.avatarUrl.isNotEmpty
                       ? NetworkImage(userProfile!.avatarUrl)
                       : const AssetImage('assets/default_avatar.png')
-                  as ImageProvider,
+                            as ImageProvider,
                 ),
               ),
               Positioned(
@@ -312,11 +306,13 @@ class _ProfilePageState extends State<ProfilePage> {
                     decoration: BoxDecoration(
                       color: Colors.white,
                       shape: BoxShape.circle,
-                      border:
-                      Border.all(color: primaryColor, width: 2),
+                      border: Border.all(color: primaryColor, width: 2),
                     ),
-                    child: const Icon(Icons.camera_alt,
-                        size: 16, color: primaryColor),
+                    child: const Icon(
+                      Icons.camera_alt,
+                      size: 16,
+                      color: primaryColor,
+                    ),
                   ),
                 ),
               ),
@@ -353,19 +349,17 @@ class _ProfileInfoCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       elevation: 3,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(15),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
       child: Padding(
-        padding:
-        const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
         child: Row(
           children: [
             Icon(icon, color: primaryColor),
             const SizedBox(width: 15),
-            Text(label,
-                style: const TextStyle(
-                    fontSize: 16, fontWeight: FontWeight.w500)),
+            Text(
+              label,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+            ),
             const Spacer(),
             Text(
               value,
