@@ -196,15 +196,15 @@ class _AddFundModalState extends State<AddFundModal> {
           .doc(widget.tripId)
           .collection('funds')
           .add({
-            'userId': _selectedPayerUid,
-            'amount': amount,
-            'currency': 'VND',
-            'date': Timestamp.fromDate(_selectedDate),
-            'note': _titleController.text.trim(),
-            'proofImage': '',
-            'createdAt': FieldValue.serverTimestamp(),
-          });
-      
+        'userId': _selectedPayerUid,
+        'amount': amount,
+        'currency': 'VND',
+        'date': Timestamp.fromDate(_selectedDate),
+        'note': _titleController.text.trim(),
+        'proofImage': '',
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
       print("Đã lưu vào Firestore thành công");
 
       // 3. Gửi thông báo (trong try-catch riêng để không chặn flow chính)
@@ -316,11 +316,11 @@ class _AddFundModalState extends State<AddFundModal> {
                   border: isSelected
                       ? null
                       : Border.symmetric(
-                          vertical: BorderSide(
-                            color: mainBlueColor,
-                            width: 1.5,
-                          ),
-                        ),
+                    vertical: BorderSide(
+                      color: mainBlueColor,
+                      width: 1.5,
+                    ),
+                  ),
                 ),
                 child: Text(
                   expenseTypes[index],
@@ -511,7 +511,7 @@ class _AddFundModalState extends State<AddFundModal> {
               ),
               style: const TextStyle(color: Colors.white, fontSize: 16),
               // Hint hiển thị khi chưa chọn hoặc đang load
-              hint: _tripMembers.isEmpty 
+              hint: _tripMembers.isEmpty
                   ? const Text("Đang tải...", style: TextStyle(color: Colors.white54))
                   : const Text("Chọn thành viên", style: TextStyle(color: Colors.white)),
               items: _tripMembers.entries.map((entry) {
@@ -582,9 +582,9 @@ class _AddFundModalState extends State<AddFundModal> {
       child: _isSaving
           ? const CircularProgressIndicator()
           : const Text(
-              'Add',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
+        'Add',
+        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+      ),
     );
   }
 }

@@ -198,14 +198,14 @@ class _ExpensesTabContentState extends State<ExpensesTabContent> with SingleTick
                 ],
               ),
             ),
-        
+
             // Đường gạch giữa
             Container(
               width: 1,
               color: Colors.white24,
               margin: const EdgeInsets.symmetric(horizontal: 20),
             ),
-        
+
             // Fund
             Expanded(
               child: Column(
@@ -249,7 +249,7 @@ class _ExpensesTabContentState extends State<ExpensesTabContent> with SingleTick
           future: _resolveUserName(payerId),
           builder: (context, snapshot) {
             final payerName = snapshot.data ?? '...';
-            
+
             // Xử lý hiển thị tên cho Quỹ
             String displayName = item['name'];
             if (!item['isExpense']) {
@@ -304,7 +304,7 @@ class _ExpensesTabContentState extends State<ExpensesTabContent> with SingleTick
   }) {
     final currencyFormat = NumberFormat.currency(locale: 'vi_VN', symbol: '₫', decimalDigits: 0);
     String amountText = currencyFormat.format(amount);
-    
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 12.0),
       child: Container(
@@ -323,9 +323,9 @@ class _ExpensesTabContentState extends State<ExpensesTabContent> with SingleTick
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Icon(
-                isExpense ? Icons.receipt_long : Icons.savings,
-                size: 18, 
-                color: expenseCardColor
+                  isExpense ? Icons.receipt_long : Icons.savings,
+                  size: 18,
+                  color: expenseCardColor
               ),
             ),
 
@@ -355,7 +355,7 @@ class _ExpensesTabContentState extends State<ExpensesTabContent> with SingleTick
                       ),
                     ),
                   ],
-                  
+
                   if (date != null) ...[
                     const SizedBox(height: 2),
                     Text(

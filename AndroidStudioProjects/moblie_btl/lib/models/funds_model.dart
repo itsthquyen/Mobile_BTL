@@ -22,12 +22,21 @@ class ContributionModel {
   });
 
   factory ContributionModel.fromMap(Map<String, dynamic> map, {String? docId}) {
+    DateTime? safeParseTimestamp(dynamic rawDate) {
+      if (rawDate is Timestamp) {
+        return rawDate.toDate();
+      } else if (rawDate is String) {
+        return DateTime.tryParse(rawDate);
+      }
+      return null;
+    }
+
     return ContributionModel(
       id: docId,
       amount: map['amount'],
-      createdAt: (map['createdAt'] as Timestamp?)?.toDate(),
+      createdAt: safeParseTimestamp(map['createdAt']),
       currency: map['currency'],
-      date: (map['date'] as Timestamp?)?.toDate(),
+      date: safeParseTimestamp(map['date']),
       note: map['note'],
       proofImage: map['proofImage'],
       userId: map['userId'],

@@ -20,12 +20,21 @@ class ExpenseModel {
   });
 
   factory ExpenseModel.fromMap(Map<String, dynamic> map, {String? docId}) {
+    DateTime? safeParseTimestamp(dynamic rawDate) {
+      if (rawDate is Timestamp) {
+        return rawDate.toDate();
+      } else if (rawDate is String) {
+        return DateTime.tryParse(rawDate);
+      }
+      return null;
+    }
+
     return ExpenseModel(
       id: docId,
       amount: map['amount'],
-      createdAt: (map['createdAt'] as Timestamp?)?.toDate(),
+      createdAt: safeParseTimestamp(map['createdAt']),
       createdBy: map['createdBy'],
-      date: (map['date'] as Timestamp?)?.toDate(),
+      date: safeParseTimestamp(map['date']),
       payerId: map['payerId'],
       title: map['title'],
     );

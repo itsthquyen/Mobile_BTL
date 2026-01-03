@@ -134,13 +134,13 @@ class _AddExpenseModalState extends State<AddExpenseModal> {
         .doc(widget.tripId)
         .collection('expenses')
         .add({
-          'title': _titleController.text.trim(),
-          'amount': amount,
-          'payerId': _selectedPayerUid,
-          'date': Timestamp.fromDate(_selectedDate),
-          'createdAt': FieldValue.serverTimestamp(),
-          'createdBy': FirebaseAuth.instance.currentUser?.uid,
-        });
+      'title': _titleController.text.trim(),
+      'amount': amount,
+      'payerId': _selectedPayerUid,
+      'date': Timestamp.fromDate(_selectedDate),
+      'createdAt': FieldValue.serverTimestamp(),
+      'createdBy': FirebaseAuth.instance.currentUser?.uid,
+    });
 
     // Gửi thông báo cho các thành viên khác trong chuyến đi
     await _notificationService.notifyExpenseAdded(
