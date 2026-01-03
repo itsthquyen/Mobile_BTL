@@ -215,7 +215,6 @@ class _NotificationsPageState extends State<NotificationsPage> {
   }
 
   void _onNotificationTap(String userId, AppNotification notification) {
-    // Đánh dấu đã đọc
     if (!notification.isRead) {
       _repository.markAsRead(userId, notification.id);
     }

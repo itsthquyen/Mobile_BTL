@@ -13,7 +13,7 @@ class NewTripOptionsModal extends StatelessWidget {
   void _startNewTrip(BuildContext context) {
     Navigator.pop(context); // Đóng modal
     Navigator.of(context).push(
-      MaterialPageRoute(builder: (context) => const CreateTrip()),
+      MaterialPageRoute(builder: (context) => const CreateTripModal()),
     );
   }
 
@@ -21,7 +21,7 @@ class NewTripOptionsModal extends StatelessWidget {
   void _joinExistingTrip(BuildContext context) {
     Navigator.pop(context); // Đóng modal
     Navigator.of(context).push(
-      MaterialPageRoute(builder: (context) => const JoinTripPage()),
+      MaterialPageRoute(builder: (context) => const JoinTripModal()),
     );
   }
 

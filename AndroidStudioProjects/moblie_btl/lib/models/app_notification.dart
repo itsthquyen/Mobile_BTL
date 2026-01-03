@@ -169,6 +169,17 @@ class AppNotification {
     String docId,
     Map<String, dynamic> map,
   ) {
+    DateTime parsedDate;
+    final dynamic rawDate = map['createdAt'];
+
+    if (rawDate is Timestamp) {
+      parsedDate = rawDate.toDate();
+    } else if (rawDate is String) {
+      parsedDate = DateTime.tryParse(rawDate) ?? DateTime.now();
+    } else {
+      parsedDate = DateTime.now(); // Fallback
+    }
+
     return AppNotification(
       id: docId,
       type: NotificationTypeExtension.fromString(
@@ -180,14 +191,14 @@ class AppNotification {
       tripName: map['tripName'],
       createdBy: map['createdBy'] ?? '',
       createdByName: map['createdByName'],
-      createdAt: (map['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      createdAt: parsedDate,
       isRead: map['isRead'] ?? false,
       data: map['data'] != null ? Map<String, dynamic>.from(map['data']) : null,
     );
   }
 
   /// Chuyển thành Map để lưu vào Firestore
-  Map<String, dynamic> toFirestore() {
+  Map<String, dynamic> toMap() { // Đổi tên toFirestore -> toMap
     return {
       'type': type.firestoreValue,
       'title': title,
@@ -196,7 +207,7 @@ class AppNotification {
       'tripName': tripName,
       'createdBy': createdBy,
       'createdByName': createdByName,
-      'createdAt': Timestamp.fromDate(createdAt),
+      'createdAt': Timestamp.fromDate(createdAt), // Luôn lưu dạng Timestamp
       'isRead': isRead,
       'data': data,
     };

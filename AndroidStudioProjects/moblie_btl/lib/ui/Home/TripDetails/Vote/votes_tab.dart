@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:moblie_btl/repository/vote_repository.dart';
-import 'package:moblie_btl/model/vote_option.dart';
+import 'package:moblie_btl/models/vote_option.dart';
 import 'dart:math';
 
 // Color constants
@@ -55,7 +55,7 @@ class _VotesTabContentState extends State<VotesTabContent> {
     if (_currentUserId == null) return;
 
     try {
-      await _repository.toggleVote(widget.tripId, optionId, _currentUserId);
+      await _repository.toggleVote(widget.tripId, optionId, _currentUserId!);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(
@@ -222,8 +222,8 @@ class _VotesTabContentState extends State<VotesTabContent> {
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
-                children: option.votes.map((odau) {
-                  final name = _memberNames[odau] ?? 'Người dùng';
+                children: option.votes.map((userId) { // Sửa ở đây
+                  final name = _memberNames[userId] ?? 'Người dùng';
                   return Chip(
                     backgroundColor: accentGoldColor.withOpacity(0.2),
                     label: Text(
@@ -295,9 +295,9 @@ class _VotesTabContentState extends State<VotesTabContent> {
       child: Stack(
         children:
             List.generate(min(voterIds.length, 4), (index) {
-              final odau = voterIds[index];
-              final name = _memberNames[odau] ?? 'U';
-              final colorIndex = odau.hashCode.abs() % colors.length;
+              final userId = voterIds[index]; // Sửa ở đây
+              final name = _memberNames[userId] ?? 'U';
+              final colorIndex = userId.hashCode.abs() % colors.length;
 
               return Positioned(
                 left: (18.0 * index),

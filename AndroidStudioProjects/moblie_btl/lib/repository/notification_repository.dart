@@ -19,8 +19,7 @@ class NotificationRepository {
         .collection('notifications');
   }
 
-  /// Stream để theo dõi danh sách notifications của user
-  /// Sắp xếp theo thời gian mới nhất
+
   Stream<List<AppNotification>> watchUserNotifications(String userId) {
     return _notificationsCollection(userId)
         .orderBy('createdAt', descending: true)
@@ -58,7 +57,7 @@ class NotificationRepository {
   ) async {
     final docRef = await _notificationsCollection(
       userId,
-    ).add(notification.toFirestore());
+    ).add(notification.toMap()); // SỬA Ở ĐÂY
     return docRef.id;
   }
 
@@ -83,7 +82,7 @@ class NotificationRepository {
       print('   Creating notification for user: $userId');
       final docRef = _notificationsCollection(userId).doc();
       final notificationWithId = notification.copyWith(id: docRef.id);
-      batch.set(docRef, notificationWithId.toFirestore());
+      batch.set(docRef, notificationWithId.toMap()); // SỬA Ở ĐÂY
     }
 
     print('   💾 Committing batch...');
@@ -91,14 +90,13 @@ class NotificationRepository {
     print('   ✅ Batch committed successfully');
   }
 
-  /// Đánh dấu notification đã đọc
+
   Future<void> markAsRead(String userId, String notificationId) async {
     await _notificationsCollection(
       userId,
     ).doc(notificationId).update({'isRead': true});
   }
 
-  /// Đánh dấu tất cả notifications đã đọc
   Future<void> markAllAsRead(String userId) async {
     final snapshot = await _notificationsCollection(
       userId,

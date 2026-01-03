@@ -1,6 +1,6 @@
 // lib/repository/vote_repository.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:moblie_btl/model/vote_option.dart';
+import 'package:moblie_btl/models/vote_option.dart';
 
 /// Repository xử lý các thao tác CRUD cho Vote trên Firestore
 ///
@@ -55,12 +55,12 @@ class VoteRepository {
       createdAt: DateTime.now(),
     );
 
-    final docRef = await _votesCollection(tripId).add(option.toFirestore());
+    final docRef = await _votesCollection(tripId).add(option.toMap());
     return option.copyWith(id: docRef.id);
   }
 
   /// Toggle vote của user cho một option
-  Future<void> toggleVote(String tripId, String optionId, String odau) async {
+  Future<void> toggleVote(String tripId, String optionId, String userId) async {
     final docRef = _votesCollection(tripId).doc(optionId);
 
     await _firestore.runTransaction((transaction) async {
@@ -69,10 +69,10 @@ class VoteRepository {
 
       final votes = List<String>.from(snapshot.data()?['votes'] ?? []);
 
-      if (votes.contains(odau)) {
-        votes.remove(odau);
+      if (votes.contains(userId)) {
+        votes.remove(userId);
       } else {
-        votes.add(odau);
+        votes.add(userId);
       }
 
       transaction.update(docRef, {'votes': votes});
@@ -88,17 +88,17 @@ class VoteRepository {
   Future<Map<String, String>> getMemberNames(List<String> userIds) async {
     Map<String, String> names = {};
 
-    for (String odau in userIds) {
-      final doc = await _firestore.collection('users').doc(odau).get();
+    for (String userId in userIds) {
+      final doc = await _firestore.collection('users').doc(userId).get();
       if (doc.exists) {
         final data = doc.data()!;
-        names[odau] =
+        names[userId] =
             data['displayName'] ??
             data['name'] ??
             data['email'] ??
             'Người dùng';
       } else {
-        names[odau] = 'Người dùng';
+        names[userId] = 'Người dùng';
       }
     }
 

@@ -41,6 +41,7 @@ class _AddFundModalState extends State<AddFundModal> {
   String? _selectedPayerUid;
   String? _tripName;
   DateTime _selectedDate = DateTime.now();
+  bool _isSaving = false; // Trạng thái đang lưu
 
   @override
   void initState() {
@@ -58,53 +59,53 @@ class _AddFundModalState extends State<AddFundModal> {
   }
 
   Future<void> _loadTripMembers() async {
-    final doc = await FirebaseFirestore.instance
-        .collection('trips')
-        .doc(widget.tripId)
-        .get();
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('trips')
+          .doc(widget.tripId)
+          .get();
 
-    if (!doc.exists) return;
+      if (!doc.exists) return;
 
-    _tripName = doc.data()?['name'];
-    final membersMap = doc.data()?['members'] as Map<String, dynamic>?;
+      _tripName = doc.data()?['name'];
+      final membersMap = doc.data()?['members'] as Map<String, dynamic>?;
 
-    if (membersMap != null && membersMap.isNotEmpty) {
-      // membersMap: {uid: role}
-      // Need to fetch display names for these UIDs
-      Map<String, String> memberNames = {};
+      if (membersMap != null && membersMap.isNotEmpty) {
+        Map<String, String> memberNames = {};
 
-      // Fetch names in parallel
-      await Future.wait(
-        membersMap.keys.map((uid) async {
-          try {
-            final userDoc = await FirebaseFirestore.instance
-                .collection('users')
-                .doc(uid)
-                .get();
-            if (userDoc.exists) {
-              memberNames[uid] = userDoc.data()?['displayName'] ?? 'Unknown';
-            } else {
+        await Future.wait(
+          membersMap.keys.map((uid) async {
+            try {
+              final userDoc = await FirebaseFirestore.instance
+                  .collection('users')
+                  .doc(uid)
+                  .get();
+              if (userDoc.exists) {
+                memberNames[uid] = userDoc.data()?['displayName'] ?? 'Unknown';
+              } else {
+                memberNames[uid] = 'Unknown';
+              }
+            } catch (e) {
               memberNames[uid] = 'Unknown';
             }
-          } catch (e) {
-            memberNames[uid] = 'Unknown';
-          }
-        }),
-      );
+          }),
+        );
 
-      if (mounted) {
-        setState(() {
-          _tripMembers = memberNames;
-          // Set default payer to current user if possible, else first in list
-          final currentUserUid = FirebaseAuth.instance.currentUser?.uid;
-          if (currentUserUid != null &&
-              _tripMembers.containsKey(currentUserUid)) {
-            _selectedPayerUid = currentUserUid;
-          } else if (_tripMembers.isNotEmpty) {
-            _selectedPayerUid = _tripMembers.keys.first;
-          }
-        });
+        if (mounted) {
+          setState(() {
+            _tripMembers = memberNames;
+            final currentUserUid = FirebaseAuth.instance.currentUser?.uid;
+            if (currentUserUid != null &&
+                _tripMembers.containsKey(currentUserUid)) {
+              _selectedPayerUid = currentUserUid;
+            } else if (_tripMembers.isNotEmpty) {
+              _selectedPayerUid = _tripMembers.keys.first;
+            }
+          });
+        }
       }
+    } catch (e) {
+      print("Error loading members: $e");
     }
   }
 
@@ -156,15 +157,40 @@ class _AddFundModalState extends State<AddFundModal> {
   }
 
   Future<void> _addFund() async {
-    if (_titleController.text.isEmpty ||
-        _amountController.text.isEmpty ||
-        _selectedPayerUid == null)
+    // 1. Validation rõ ràng
+    if (_titleController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Vui lòng nhập nội dung quỹ')),
+      );
       return;
+    }
+    if (_amountController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Vui lòng nhập số tiền')),
+      );
+      return;
+    }
+    if (_selectedPayerUid == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Vui lòng chọn người đóng góp')),
+      );
+      return;
+    }
+
+    setState(() {
+      _isSaving = true;
+    });
 
     final amount =
         double.tryParse(_amountController.text.replaceAll('.', '')) ?? 0;
 
+    print("--- Bắt đầu thêm quỹ ---");
+    print("TripID: ${widget.tripId}");
+    print("Payer: $_selectedPayerUid");
+    print("Amount: $amount");
+
     try {
+      // 2. Thêm vào Firestore
       await FirebaseFirestore.instance
           .collection('trips')
           .doc(widget.tripId)
@@ -174,28 +200,45 @@ class _AddFundModalState extends State<AddFundModal> {
             'amount': amount,
             'currency': 'VND',
             'date': Timestamp.fromDate(_selectedDate),
-            'note': 'Quỹ',
+            'note': _titleController.text.trim(),
             'proofImage': '',
             'createdAt': FieldValue.serverTimestamp(),
           });
+      
+      print("Đã lưu vào Firestore thành công");
 
-      // Gửi thông báo cho các thành viên khác trong chuyến đi
-      await _notificationService.notifyFundAdded(
-        tripId: widget.tripId,
-        tripName: _tripName ?? 'Chuyến đi',
-        fundTitle: 'Quỹ',
-        amount: amount,
-        currency: 'VND',
-      );
+      // 3. Gửi thông báo (trong try-catch riêng để không chặn flow chính)
+      try {
+        await _notificationService.notifyFundAdded(
+          tripId: widget.tripId,
+          tripName: _tripName ?? 'Chuyến đi',
+          fundTitle: _titleController.text.trim(),
+          amount: amount,
+          currency: 'VND',
+        );
+        print("Đã gửi thông báo thành công");
+      } catch (notiError) {
+        print("Lỗi gửi thông báo: $notiError");
+      }
 
       if (mounted) {
         Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Đã thêm quỹ thành công!')),
+        );
       }
     } catch (e) {
+      print("Lỗi khi thêm quỹ: $e");
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Error adding fund: $e')));
+        ).showSnackBar(SnackBar(content: Text('Lỗi: $e')));
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSaving = false;
+        });
       }
     }
   }
@@ -223,7 +266,6 @@ class _AddFundModalState extends State<AddFundModal> {
                     const SizedBox(height: 25),
                     _buildAmountInput(),
                     const SizedBox(height: 25),
-                    // Thêm Dropdown chọn người đóng quỹ
                     _buildPaidByDropdown(),
                     const SizedBox(height: 25),
                     _buildWhenInput(context),
@@ -255,7 +297,7 @@ class _AddFundModalState extends State<AddFundModal> {
       ),
       child: Row(
         children: List.generate(expenseTypes.length, (index) {
-          bool isSelected = index == 1; // "Fund" is selected
+          bool isSelected = index == 1;
           return Expanded(
             child: GestureDetector(
               onTap: () {
@@ -298,7 +340,6 @@ class _AddFundModalState extends State<AddFundModal> {
     );
   }
 
-  // --- CÁC HÀM BUILD KHÁC GIỮ NGUYÊN ---
   Widget _buildCustomHeader(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(5, 15, 20, 10),
@@ -341,29 +382,24 @@ class _AddFundModalState extends State<AddFundModal> {
         const SizedBox(height: 8),
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
+          // Xóa decoration cứng, dùng TextField để có thể edit nếu muốn (hoặc Container như cũ)
+          // Theo yêu cầu trước là "Quỹ" mặc định nhưng vẫn dùng Container. 
+          // Ở đây tôi đổi thành TextField readonly để đồng bộ style
           decoration: BoxDecoration(
             color: darkFieldColor,
             borderRadius: BorderRadius.circular(10),
           ),
-          child: const Text(
-            'Quỹ',
-            style: TextStyle(color: lightTextColor, fontSize: 16),
+          child: TextField(
+            controller: _titleController,
+            readOnly: true, // Không cho sửa tiêu đề Quỹ theo yêu cầu cũ
+            style: const TextStyle(color: lightTextColor, fontSize: 16),
+            decoration: const InputDecoration(
+              contentPadding: EdgeInsets.symmetric(horizontal: 15, vertical: 15),
+              border: InputBorder.none,
+            ),
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildAccessoryButton(IconData icon) {
-    return Container(
-      width: 50,
-      height: 50,
-      decoration: BoxDecoration(
-        color: darkFieldColor,
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Icon(icon, color: Colors.white70, size: 24),
     );
   }
 
@@ -474,6 +510,10 @@ class _AddFundModalState extends State<AddFundModal> {
                 color: Colors.white70,
               ),
               style: const TextStyle(color: Colors.white, fontSize: 16),
+              // Hint hiển thị khi chưa chọn hoặc đang load
+              hint: _tripMembers.isEmpty 
+                  ? const Text("Đang tải...", style: TextStyle(color: Colors.white54))
+                  : const Text("Chọn thành viên", style: TextStyle(color: Colors.white)),
               items: _tripMembers.entries.map((entry) {
                 return DropdownMenuItem<String>(
                   value: entry.key,
@@ -531,7 +571,7 @@ class _AddFundModalState extends State<AddFundModal> {
 
   Widget _buildAddButton() {
     return ElevatedButton(
-      onPressed: _addFund,
+      onPressed: _isSaving ? null : _addFund,
       style: ElevatedButton.styleFrom(
         backgroundColor: lightTextColor,
         foregroundColor: mainBlueColor,
@@ -539,10 +579,12 @@ class _AddFundModalState extends State<AddFundModal> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         elevation: 0,
       ),
-      child: const Text(
-        'Add',
-        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-      ),
+      child: _isSaving
+          ? const CircularProgressIndicator()
+          : const Text(
+              'Add',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
     );
   }
 }
