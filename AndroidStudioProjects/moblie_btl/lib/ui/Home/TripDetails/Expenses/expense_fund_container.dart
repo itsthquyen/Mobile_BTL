@@ -1,13 +1,12 @@
-// lib/ui/Home/TripDetails/Expenses/expense_fund_container.dart
 import 'package:flutter/material.dart';
 import 'add_expense.dart';
 import 'add_fund.dart';
-import 'add_transfer.dart';
 
-enum ExpenseScreen { expense, fund, transfer }
+// Đã bỏ chức năng Chuyển tiền
+enum ExpenseScreen { expense, fund }
 
 class ExpenseFundContainer extends StatefulWidget {
-  final String tripId; // Nhận tripId từ TripDetailsPage
+  final String tripId;
   const ExpenseFundContainer({super.key, required this.tripId});
 
   @override
@@ -19,7 +18,6 @@ class _ExpenseFundContainerState extends State<ExpenseFundContainer> {
 
   void _showExpense() => setState(() => _currentScreen = ExpenseScreen.expense);
   void _showFund() => setState(() => _currentScreen = ExpenseScreen.fund);
-  void _showTransfer() => setState(() => _currentScreen = ExpenseScreen.transfer);
 
   @override
   Widget build(BuildContext context) {
@@ -33,24 +31,15 @@ class _ExpenseFundContainerState extends State<ExpenseFundContainer> {
     switch (_currentScreen) {
       case ExpenseScreen.expense:
         return AddExpenseModal(
-          key: const ValueKey('Expense'),
-          tripId: widget.tripId, // Truyền tripId xuống
+          key: const ValueKey('ChiPhi'), // Đã sửa
+          tripId: widget.tripId,
           onNavigateToFund: _showFund,
-          onNavigateToTransfer: _showTransfer,
         );
       case ExpenseScreen.fund:
         return AddFundModal(
-          key: const ValueKey('Fund'),
-          tripId: widget.tripId, // Truyền tripId xuống
+          key: const ValueKey('Quy'), // Đã sửa
+          tripId: widget.tripId,
           onNavigateToExpense: _showExpense,
-          onNavigateToTransfer: _showTransfer,
-        );
-      case ExpenseScreen.transfer:
-        return AddTransferModal(
-          key: const ValueKey('Transfer'),
-          tripId: widget.tripId, // Truyền tripId xuống
-          onNavigateToExpense: _showExpense,
-          onNavigateToFund: _showFund,
         );
     }
   }

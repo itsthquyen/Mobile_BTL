@@ -254,6 +254,18 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Widget _buildHeader() {
+    ImageProvider<Object> getAvatarImage() {
+      final avatarUrl = userProfile?.avatarUrl ?? '';
+
+      if (avatarUrl.startsWith('assets/')) {
+        return AssetImage(avatarUrl);
+      } else if (avatarUrl.startsWith('http')) {
+        return NetworkImage(avatarUrl);
+      }
+      // Ảnh mặc định nếu không có hoặc đường dẫn sai
+      return const AssetImage('assets/images/default_avatar.png');
+    }
+
     return Container(
       padding: const EdgeInsets.only(top: 50, bottom: 30, left: 20, right: 20),
       decoration: const BoxDecoration(
@@ -290,10 +302,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 backgroundColor: Colors.white,
                 child: CircleAvatar(
                   radius: 48,
-                  backgroundImage: userProfile!.avatarUrl.isNotEmpty
-                      ? NetworkImage(userProfile!.avatarUrl)
-                      : const AssetImage('assets/default_avatar.png')
-                            as ImageProvider,
+                  backgroundImage: getAvatarImage(),
                 ),
               ),
               Positioned(

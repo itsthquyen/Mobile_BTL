@@ -14,13 +14,11 @@ class ExpenseController {
         .collection('trips')
         .doc(tripId)
         .collection('expenses')
-        // .orderBy('date', descending: true) // Xóa sắp xếp ở đây
         .snapshots()
         .map((snapshot) {
       var list = snapshot.docs
           .map((doc) => ExpenseModel.fromMap(doc.data(), docId: doc.id))
           .toList();
-      // Sắp xếp trong Dart để xử lý dữ liệu không đồng nhất
       list.sort((a, b) {
         final dateA = a.date;
         final dateB = b.date;
@@ -37,13 +35,11 @@ class ExpenseController {
         .collection('trips')
         .doc(tripId)
         .collection('funds')
-        // .orderBy('date', descending: true) // Xóa sắp xếp ở đây
         .snapshots()
         .map((snapshot) {
       var list = snapshot.docs
           .map((doc) => ContributionModel.fromMap(doc.data(), docId: doc.id))
           .toList();
-      // Sắp xếp trong Dart
       list.sort((a, b) {
         final dateA = a.date;
         final dateB = b.date;
@@ -62,7 +58,10 @@ class ExpenseController {
     required String payerId,
     required DateTime date,
     required String tripName,
+    required List<String> memberIds, 
   }) async {
+    final beneficiaries = { for (var id in memberIds) id : (amount / memberIds.length) };
+
     final newExpense = ExpenseModel(
       title: title,
       amount: amount,
@@ -70,6 +69,7 @@ class ExpenseController {
       date: date,
       createdBy: _auth.currentUser?.uid,
       createdAt: DateTime.now(),
+      beneficiaries: beneficiaries,
     );
 
     await _firestore
@@ -77,6 +77,8 @@ class ExpenseController {
         .doc(tripId)
         .collection('expenses')
         .add(newExpense.toMap());
+
+    // Không cần tính toán lại balance nữa
 
     try {
       await _notificationService.notifyExpenseAdded(
@@ -97,6 +99,7 @@ class ExpenseController {
     required String userId,
     required DateTime date,
     required String tripName,
+    required List<String> memberIds,
   }) async {
     final newFund = ContributionModel(
       userId: userId,
@@ -113,6 +116,8 @@ class ExpenseController {
         .doc(tripId)
         .collection('funds')
         .add(newFund.toMap());
+
+    // Không cần tính toán lại balance nữa
 
     try {
       await _notificationService.notifyFundAdded(

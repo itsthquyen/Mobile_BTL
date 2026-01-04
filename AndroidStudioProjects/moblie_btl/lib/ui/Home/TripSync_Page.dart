@@ -69,11 +69,10 @@ class _TripsyncPageState extends State<TripsyncPage> {
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: <Widget>[
             _buildNavItem(Icons.auto_stories, 'TripSync', 0),
-            _buildNavItem(Icons.qr_code_scanner, 'Identify', 1),
+            _buildNavItem(Icons.qr_code_scanner, 'Định danh', 1),
             const SizedBox(width: 48.0),
-            // Notification item with badge
             _buildNotificationNavItem(userId),
-            _buildNavItem(Icons.person_outline, 'Profile', 4),
+            _buildNavItem(Icons.person_outline, 'Cá nhân', 4),
           ],
         ),
       ),
@@ -88,11 +87,11 @@ class _TripsyncPageState extends State<TripsyncPage> {
 
   /// Widget đặc biệt cho Notification với badge hiển thị số thông báo chưa đọc
   Widget _buildNotificationNavItem(String? userId) {
-    final actualIndex = 2; // Notifications is at index 2 in _pages
+    final actualIndex = 2;
     final isSelected = _selectedIndex == actualIndex;
 
     return InkWell(
-      onTap: () => _onItemTapped(3), // Index 3 in the nav bar logic
+      onTap: () => _onItemTapped(3),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 6.0),
         child: Column(
@@ -105,7 +104,6 @@ class _TripsyncPageState extends State<TripsyncPage> {
                   Icons.notifications_none,
                   color: isSelected ? primaryColor : Colors.grey,
                 ),
-                // Badge với số thông báo chưa đọc
                 if (userId != null)
                   StreamBuilder<int>(
                     stream: _notificationRepository.watchUnreadCount(userId),
@@ -118,7 +116,7 @@ class _TripsyncPageState extends State<TripsyncPage> {
                         top: -4,
                         child: Container(
                           padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(
+                          decoration: const BoxDecoration(
                             color: Colors.red,
                             shape: BoxShape.circle,
                           ),
@@ -192,11 +190,9 @@ class TripSyncContentPage extends StatefulWidget {
 class _TripSyncContentPageState extends State<TripSyncContentPage> {
   final PageController _pageController = PageController(viewportFraction: 0.85);
 
-  // Cache for shuffled discovery trips
   List<Trip>? _cachedDiscoveryTrips;
   String? _lastUid;
 
-  // Move stream to a variable to prevent resetting in build
   late Stream<List<Trip>> _tripsStream;
 
   @override
@@ -211,7 +207,6 @@ class _TripSyncContentPageState extends State<TripSyncContentPage> {
     super.dispose();
   }
 
-  /// ===== LOAD ALL TRIPS =====
   Stream<List<Trip>> _getAllTrips() {
     return FirebaseFirestore.instance
         .collection('trips')
@@ -240,29 +235,25 @@ class _TripSyncContentPageState extends State<TripSyncContentPage> {
 
         if (snapshot.hasError) {
           return const Scaffold(
-            body: Center(child: Text("Error loading trips")),
+            body: Center(child: Text("Lỗi khi tải chuyến đi")),
           );
         }
 
         final allTrips = snapshot.data ?? [];
 
-        // --- PHÂN LOẠI TRIPS ---
         final String uid = user?.uid ?? "";
         final String email = user?.email ?? "";
 
-        // 1. My Trips: User có trong list (bằng UID hoặc Email)
         final myTrips = allTrips.where((trip) {
           return trip.members.containsKey(uid) ||
               trip.members.containsKey(email);
         }).toList();
 
-        // 2. Discovery Trips: User KHÔNG có trong list
         final rawDiscoveryTrips = allTrips.where((trip) {
           return !trip.members.containsKey(uid) &&
               !trip.members.containsKey(email);
         }).toList();
 
-        // Update cache only if data changed significantly
         if (_cachedDiscoveryTrips == null ||
             _lastUid != uid ||
             !_areTripsEqual(_cachedDiscoveryTrips!, rawDiscoveryTrips)) {
@@ -275,10 +266,7 @@ class _TripSyncContentPageState extends State<TripSyncContentPage> {
         return SingleChildScrollView(
           child: Column(
             children: [
-              // Header
               _buildHeader(),
-
-              // === PHẦN 1: KHÁM PHÁ / NGẪU NHIÊN (SLIDER/PAGEVIEW) ===
               Transform.translate(
                 offset: const Offset(0, -60),
                 child: Column(
@@ -294,7 +282,6 @@ class _TripSyncContentPageState extends State<TripSyncContentPage> {
                         ),
                       ),
                     ),
-
                     if (discoveryTrips.isNotEmpty)
                       SizedBox(
                         height: 320,
@@ -320,13 +307,11 @@ class _TripSyncContentPageState extends State<TripSyncContentPage> {
                   ],
                 ),
               ),
-
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Smooth Animated Pager Indicator using ListenableBuilder
                     if (discoveryTrips.length > 1)
                       ListenableBuilder(
                         listenable: _pageController,
@@ -342,10 +327,7 @@ class _TripSyncContentPageState extends State<TripSyncContentPage> {
                           );
                         },
                       ),
-
                     const SizedBox(height: 30),
-
-                    // === PHẦN 2: MY TRIPS (CỦA TÔI) ===
                     const Text(
                       'Chuyến đi của tôi',
                       style: TextStyle(
@@ -355,7 +337,6 @@ class _TripSyncContentPageState extends State<TripSyncContentPage> {
                       ),
                     ),
                     const SizedBox(height: 15),
-
                     if (myTrips.isNotEmpty)
                       SizedBox(
                         height: 180,
@@ -374,7 +355,6 @@ class _TripSyncContentPageState extends State<TripSyncContentPage> {
                       )
                     else
                       _buildEmptyMyTrips(),
-
                     const SizedBox(height: 150),
                   ],
                 ),
@@ -386,7 +366,6 @@ class _TripSyncContentPageState extends State<TripSyncContentPage> {
     );
   }
 
-  // Check if trips list content has changed (by comparing IDs)
   bool _areTripsEqual(List<Trip> a, List<Trip> b) {
     if (a.length != b.length) return false;
     final aIds = a.map((t) => t.id).toSet();
@@ -394,7 +373,6 @@ class _TripSyncContentPageState extends State<TripSyncContentPage> {
     return aIds.containsAll(bIds) && bIds.containsAll(aIds);
   }
 
-  // Smooth animated page indicator
   Widget _buildSmoothPageIndicator(int itemCount, double currentPage) {
     final int currentIndex = currentPage.round();
 
@@ -484,207 +462,84 @@ class _TripSyncContentPageState extends State<TripSyncContentPage> {
               ),
               SizedBox(height: 5),
               Text(
-                'Discover & Join 🌏',
+                'Lên kế hoạch, Trải nghiệm, Chia sẻ', // Đã sửa
                 style: TextStyle(
                   color: Colors.white70,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w500,
+                  fontSize: 16,
                 ),
               ),
             ],
           ),
-          CircleAvatar(
-            radius: 20,
-            backgroundColor: Colors.grey.shade300,
-            backgroundImage: const NetworkImage(
-              'https://picsum.photos/50/50?random=2',
+          IconButton(
+            icon: const Icon(
+              Icons.notifications_none,
+              color: Colors.white,
+              size: 28,
             ),
+            onPressed: () {},
           ),
         ],
       ),
     );
   }
 
-  // --- Widget Card Chuyến Đi Lớn (Discovery Trip) ---
   Widget _buildTripCard({required BuildContext context, required Trip trip}) {
-    return Card(
-      elevation: 10,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(20),
-        onTap: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(builder: (ctx) => TripDetailsPage(trip: trip)),
-          );
-        },
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => TripDetailsPage(trip: trip),
+          ),
+        );
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10)],
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             ClipRRect(
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(20),
-              ),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
               child: Image.network(
                 trip.coverUrl,
-                fit: BoxFit.cover,
-                height: 200,
+                height: 150,
                 width: double.infinity,
-                errorBuilder: (context, error, stackTrace) => Container(
-                  height: 200,
-                  color: Colors.grey[300],
-                  child: const Icon(Icons.broken_image),
-                ),
+                fit: BoxFit.cover,
               ),
             ),
             Padding(
-              padding: const EdgeInsets.all(20.0),
+              padding: const EdgeInsets.all(15.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     trip.name,
-                    maxLines: 1,
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: primaryColor,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      const Icon(Icons.person, size: 16, color: Colors.grey),
-                      const SizedBox(width: 4),
-                      Text(
-                        '${trip.memberCount} thành viên',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          color: Colors.grey,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 15),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          _buildMemberAvatar(),
-                          Transform.translate(
-                            offset: const Offset(-10, 0),
-                            child: _buildMemberAvatar(),
-                          ),
-                          Transform.translate(
-                            offset: const Offset(-20, 0),
-                            child: _buildMemberAvatar(),
-                          ),
-                        ],
-                      ),
-                      Container(
-                        padding: const EdgeInsets.all(8.0),
-                        decoration: const BoxDecoration(
-                          color: primaryColor,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.arrow_forward,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMiniTripCard({
-    required BuildContext context,
-    required Trip trip,
-  }) {
-    return InkWell(
-      onTap: () {
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (ctx) => TripDetailsPage(trip: trip)),
-        );
-      },
-      borderRadius: BorderRadius.circular(15),
-      child: Container(
-        width: 150,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(15),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withAlpha(26),
-              spreadRadius: 2,
-              blurRadius: 5,
-              offset: const Offset(0, 3),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              height: 80,
-              decoration: BoxDecoration(
-                color: Colors.teal,
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(15),
-                ),
-                image: DecorationImage(
-                  image: NetworkImage(trip.coverUrl),
-                  fit: BoxFit.cover,
-                  colorFilter: ColorFilter.mode(
-                    Colors.teal.withAlpha(77),
-                    BlendMode.dstATop,
-                  ),
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(10.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    trip.name,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: primaryColor,
-                      fontSize: 16,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  const Text(
-                    'Joined',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.green,
-                      fontWeight: FontWeight.bold,
-                    ),
                   ),
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      const Icon(Icons.group, size: 14, color: Colors.grey),
-                      const SizedBox(width: 4),
+                      Icon(Icons.calendar_today, size: 14, color: Colors.grey[600]),
+                      const SizedBox(width: 5),
                       Text(
-                        '${trip.memberCount}',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey,
-                        ),
+                        trip.startDate != null
+                            ? '${trip.startDate!.day}/${trip.startDate!.month}/${trip.startDate!.year}'
+                            : 'Chưa có ngày',
+                        style: TextStyle(fontSize: 13, color: Colors.grey[600]),
                       ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Icon(Icons.person_outline, size: 16, color: Colors.grey[600]),
+                      const SizedBox(width: 5),
+                      Text('${trip.memberCount} thành viên'),
                     ],
                   ),
                 ],
@@ -696,11 +551,52 @@ class _TripSyncContentPageState extends State<TripSyncContentPage> {
     );
   }
 
-  Widget _buildMemberAvatar() {
-    return const CircleAvatar(
-      radius: 18,
-      backgroundColor: Colors.white,
-      child: CircleAvatar(radius: 16, backgroundColor: Colors.grey),
+  Widget _buildMiniTripCard({required BuildContext context, required Trip trip}) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => TripDetailsPage(trip: trip),
+          ),
+        );
+      },
+      child: Container(
+        width: 250,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(15.0),
+          image: DecorationImage(
+            image: NetworkImage(trip.coverUrl),
+            fit: BoxFit.cover,
+            colorFilter: ColorFilter.mode(
+              Colors.black.withOpacity(0.4),
+              BlendMode.darken,
+            ),
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(12.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.end,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                trip.name,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '${trip.memberCount} thành viên',
+                style: const TextStyle(color: Colors.white70, fontSize: 13),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

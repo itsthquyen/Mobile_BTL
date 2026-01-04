@@ -26,7 +26,36 @@ class TripController {
     return covers[Random().nextInt(covers.length)];
   }
 
+  // --- Logic nghiệp vụ ---
 
+  /// Lấy danh sách thành viên và tên của họ
+  Future<Map<String, String>> getTripMembersWithNames(String tripId) async {
+    try {
+      final doc = await _firestore.collection('trips').doc(tripId).get();
+      if (!doc.exists) return {};
+
+      final membersMap = doc.data()?['members'] as Map<String, dynamic>?;
+      if (membersMap == null || membersMap.isEmpty) return {};
+
+      Map<String, String> memberNames = {};
+      await Future.wait(membersMap.keys.map((uid) async {
+        try {
+          final userDoc = await _firestore.collection('users').doc(uid).get();
+          if (userDoc.exists) {
+            memberNames[uid] = userDoc.data()?['displayName'] ?? 'Unknown';
+          } else {
+            memberNames[uid] = 'Unknown';
+          }
+        } catch (e) {
+          memberNames[uid] = 'Unknown';
+        }
+      }));
+      return memberNames;
+    } catch (e) {
+      print("Error getting trip members: $e");
+      return {};
+    }
+  }
 
   Future<String> getCurrentUserName() async {
     final user = _auth.currentUser;

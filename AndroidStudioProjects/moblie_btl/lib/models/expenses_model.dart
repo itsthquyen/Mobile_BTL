@@ -8,6 +8,7 @@ class ExpenseModel {
   DateTime? date;
   String? payerId;
   String? title;
+  Map<String, num>? beneficiaries; // Thêm trường này
 
   ExpenseModel({
     this.id,
@@ -17,6 +18,7 @@ class ExpenseModel {
     this.date,
     this.payerId,
     this.title,
+    this.beneficiaries,
   });
 
   factory ExpenseModel.fromMap(Map<String, dynamic> map, {String? docId}) {
@@ -37,6 +39,8 @@ class ExpenseModel {
       date: safeParseTimestamp(map['date']),
       payerId: map['payerId'],
       title: map['title'],
+      // Lấy dữ liệu beneficiaries từ map
+      beneficiaries: map['beneficiaries'] != null ? Map<String, num>.from(map['beneficiaries']) : null,
     );
   }
 
@@ -48,6 +52,7 @@ class ExpenseModel {
       'date': date != null ? Timestamp.fromDate(date!) : null,
       'payerId': payerId,
       'title': title,
+      'beneficiaries': beneficiaries, // Thêm vào map để lưu
     };
   }
 }
