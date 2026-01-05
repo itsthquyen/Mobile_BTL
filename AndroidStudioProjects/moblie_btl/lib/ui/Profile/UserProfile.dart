@@ -374,7 +374,7 @@ class _ProfileInfoCard extends StatelessWidget {
               value,
               style: TextStyle(
                 fontSize: 16,
-                color: Colors.black.withOpacity(0.7),
+                color: Colors.black.withValues(alpha: 0.7),
               ),
             ),
           ],

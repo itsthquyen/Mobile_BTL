@@ -101,7 +101,7 @@ class _DocumentViewerPageState extends State<DocumentViewerPage> {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        backgroundColor: Colors.black.withOpacity(0.7),
+        backgroundColor: Colors.black.withValues(alpha: 0.7),
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.close, color: Colors.white),
@@ -166,12 +166,12 @@ class _DocumentViewerPageState extends State<DocumentViewerPage> {
                   Icon(
                     Icons.broken_image,
                     size: 64,
-                    color: Colors.white.withOpacity(0.5),
+                    color: Colors.white.withValues(alpha: 0.5),
                   ),
                   const SizedBox(height: 16),
                   Text(
                     'Không thể tải ảnh',
-                    style: TextStyle(color: Colors.white.withOpacity(0.7)),
+                    style: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
                   ),
                 ],
               );
@@ -182,7 +182,7 @@ class _DocumentViewerPageState extends State<DocumentViewerPage> {
       bottomNavigationBar: widget.document.label != null
           ? Container(
               padding: const EdgeInsets.all(16),
-              color: Colors.black.withOpacity(0.7),
+              color: Colors.black.withValues(alpha: 0.7),
               child: SafeArea(
                 child: Row(
                   children: [

@@ -170,7 +170,7 @@ class _CreateTripModalState extends State<CreateTripModal> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
                   decoration: BoxDecoration(
-                    color: primaryColor.withOpacity(0.1),
+                    color: primaryColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(color: primaryColor),
                   ),
@@ -399,7 +399,7 @@ class _CreateTripModalState extends State<CreateTripModal> {
                 child: Container(
                   padding: const EdgeInsets.all(15.0),
                   decoration: BoxDecoration(
-                    color: isAdmin ? primaryColor.withOpacity(0.1) : inputFillColor,
+                    color: isAdmin ? primaryColor.withValues(alpha: 0.1) : inputFillColor,
                     borderRadius: BorderRadius.circular(12.0),
                   ),
                   child: Row(

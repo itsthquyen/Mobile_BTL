@@ -42,14 +42,13 @@ class VoteRepository {
     required String tripId,
     required String location,
     String? description,
-    String? imageUrl,
+
     required String createdBy,
   }) async {
     final option = VoteOption(
       id: '',
       location: location,
       description: description,
-      imageUrl: imageUrl,
       votes: [],
       createdBy: createdBy,
       createdAt: DateTime.now(),

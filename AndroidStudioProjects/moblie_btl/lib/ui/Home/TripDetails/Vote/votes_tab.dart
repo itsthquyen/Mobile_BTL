@@ -106,13 +106,13 @@ class _VotesTabContentState extends State<VotesTabContent> {
                 Icon(
                   Icons.how_to_vote_outlined,
                   size: 64,
-                  color: Colors.white.withOpacity(0.3),
+                  color: Colors.white.withValues(alpha: 0.3),
                 ),
                 const SizedBox(height: 16),
                 Text(
                   'Chưa có địa điểm nào để bình chọn.\nNhấn "Add Location" để thêm!',
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.5),
+                    color: Colors.white.withValues(alpha: 0.5),
                     fontSize: 14,
                   ),
                   textAlign: TextAlign.center,
@@ -146,7 +146,7 @@ class _VotesTabContentState extends State<VotesTabContent> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 12.0),
         decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.25),
+          color: Colors.black.withValues(alpha: 0.25),
           borderRadius: BorderRadius.circular(15),
           border: hasVoted
               ? Border.all(color: accentGoldColor, width: 2)
@@ -177,7 +177,7 @@ class _VotesTabContentState extends State<VotesTabContent> {
                     Text(
                       option.description!,
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.6),
+                        color: Colors.white.withValues(alpha: 0.6),
                         fontSize: 13,
                       ),
                       maxLines: 1,
@@ -225,7 +225,7 @@ class _VotesTabContentState extends State<VotesTabContent> {
                 children: option.votes.map((userId) { // Sửa ở đây
                   final name = _memberNames[userId] ?? 'Người dùng';
                   return Chip(
-                    backgroundColor: accentGoldColor.withOpacity(0.2),
+                    backgroundColor: accentGoldColor.withValues(alpha: 0.2),
                     label: Text(
                       name,
                       style: const TextStyle(color: Colors.white, fontSize: 12),

@@ -4,7 +4,6 @@ class VoteOption {
   final String id;
   final String location;
   final String? description;
-  final String? imageUrl;
   final List<String> votes; // Danh sách userId đã vote
   final String createdBy;
   final DateTime createdAt;
@@ -13,7 +12,6 @@ class VoteOption {
     required this.id,
     required this.location,
     this.description,
-    this.imageUrl,
     required this.votes,
     required this.createdBy,
     required this.createdAt,
@@ -23,7 +21,6 @@ class VoteOption {
     String? id,
     String? location,
     String? description,
-    String? imageUrl,
     List<String>? votes,
     String? createdBy,
     DateTime? createdAt,
@@ -32,7 +29,6 @@ class VoteOption {
       id: id ?? this.id,
       location: location ?? this.location,
       description: description ?? this.description,
-      imageUrl: imageUrl ?? this.imageUrl,
       votes: votes ?? this.votes,
       createdBy: createdBy ?? this.createdBy,
       createdAt: createdAt ?? this.createdAt,
@@ -56,7 +52,6 @@ class VoteOption {
       id: id,
       location: data['location'] ?? '',
       description: data['description'],
-      imageUrl: data['imageUrl'],
       votes: List<String>.from(data['votes'] ?? []),
       createdBy: data['createdBy'] ?? '',
       createdAt: parsedDate,
@@ -68,7 +63,6 @@ class VoteOption {
     return {
       'location': location,
       'description': description,
-      'imageUrl': imageUrl,
       'votes': votes,
       'createdBy': createdBy,
       'createdAt': Timestamp.fromDate(createdAt),

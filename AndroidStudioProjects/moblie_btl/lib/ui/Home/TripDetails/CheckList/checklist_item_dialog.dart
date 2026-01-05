@@ -224,13 +224,13 @@ class _MemberChecklistPageState extends State<MemberChecklistPage> {
                           Icon(
                             Icons.checklist,
                             size: 64,
-                            color: Colors.white.withOpacity(0.3),
+                            color: Colors.white.withValues(alpha: 0.3),
                           ),
                           const SizedBox(height: 16),
                           Text(
                             'Chưa có vật dụng nào.\nNhấn "Thêm vật dụng mới..." để bắt đầu!',
                             style: TextStyle(
-                              color: Colors.white.withOpacity(0.5),
+                              color: Colors.white.withValues(alpha: 0.5),
                               fontSize: 14,
                             ),
                             textAlign: TextAlign.center,
@@ -303,7 +303,7 @@ class _MemberChecklistPageState extends State<MemberChecklistPage> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.2),
+            color: Colors.black.withValues(alpha: 0.2),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Row(
@@ -344,22 +344,22 @@ class _MemberChecklistPageState extends State<MemberChecklistPage> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.1),
+          color: Colors.white.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.white.withOpacity(0.2), width: 1),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.2), width: 1),
         ),
         child: Row(
           children: [
             Icon(
               Icons.add_circle_outline,
-              color: accentGoldColor.withOpacity(0.8),
+              color: accentGoldColor.withValues(alpha: 0.8),
               size: 24,
             ),
             const SizedBox(width: 14),
             Text(
               'Thêm vật dụng mới...',
               style: TextStyle(
-                color: Colors.white.withOpacity(0.6),
+                color: Colors.white.withValues(alpha: 0.6),
                 fontSize: 16,
                 fontStyle: FontStyle.italic,
               ),
@@ -374,15 +374,15 @@ class _MemberChecklistPageState extends State<MemberChecklistPage> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.15),
+        color: Colors.white.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: accentGoldColor.withOpacity(0.5), width: 1.5),
+        border: Border.all(color: accentGoldColor.withValues(alpha: 0.5), width: 1.5),
       ),
       child: Row(
         children: [
           Icon(
             Icons.check_box_outline_blank_rounded,
-            color: accentGoldColor.withOpacity(0.5),
+            color: accentGoldColor.withValues(alpha: 0.5),
             size: 24,
           ),
           const SizedBox(width: 10),
@@ -395,7 +395,7 @@ class _MemberChecklistPageState extends State<MemberChecklistPage> {
               decoration: InputDecoration(
                 hintText: 'Nhập tên vật dụng...',
                 hintStyle: TextStyle(
-                  color: Colors.white.withOpacity(0.4),
+                  color: Colors.white.withValues(alpha: 0.4),
                   fontSize: 16,
                 ),
                 border: InputBorder.none,
@@ -409,7 +409,7 @@ class _MemberChecklistPageState extends State<MemberChecklistPage> {
           IconButton(
             icon: Icon(
               Icons.close,
-              color: Colors.white.withOpacity(0.6),
+              color: Colors.white.withValues(alpha: 0.6),
               size: 22,
             ),
             onPressed: _isSubmitting ? null : _cancelAddingItem,

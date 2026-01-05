@@ -51,7 +51,7 @@ class IdentifyPage extends StatelessWidget {
                         Icon(
                           Icons.error_outline,
                           size: 48,
-                          color: Colors.red.withOpacity(0.7),
+                          color: Colors.red.withValues(alpha: 0.7),
                         ),
                         const SizedBox(height: 16),
                         Text(
@@ -206,7 +206,7 @@ class IdentifyPage extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(10.0),
                 decoration: BoxDecoration(
-                  color: primaryColor.withOpacity(0.1),
+                  color: primaryColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(10.0),
                 ),
                 child: Icon(icon, color: primaryColor, size: 30),

@@ -124,9 +124,9 @@ class ScheduleTabContent extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 12.0),
       decoration: BoxDecoration(
-        color: primaryColor.withOpacity(0.3),
+        color: primaryColor.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withOpacity(0.2)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
       ),
       child: InkWell(
         onTap: isAdmin ? () => _showEditScheduleModal(context, docId, data) : null,
@@ -196,7 +196,7 @@ class ScheduleTabContent extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.manage_search_rounded, size: 80, color: accentGoldColor.withOpacity(0.8)),
+          Icon(Icons.manage_search_rounded, size: 80, color: accentGoldColor.withValues(alpha: 0.8)),
           const SizedBox(height: 16),
           const Text(
             "Chưa có lịch trình",
@@ -208,7 +208,7 @@ class ScheduleTabContent extends StatelessWidget {
             child: Text(
               'Nhấn nút "+" để bắt đầu tạo lịch trình cho chuyến đi của bạn.',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 14, color: Colors.white.withOpacity(0.7), height: 1.4),
+              style: TextStyle(fontSize: 14, color: Colors.white.withValues(alpha: 0.7), height: 1.4),
             ),
           ),
         ],

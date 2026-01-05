@@ -1,3 +1,4 @@
 {
-    "cmake.sourceDirectory": "D:/A_Moblie_BTL/Mobile_BTL/AndroidStudioProjects/moblie_btl/linux"
+    "cmake.sourceDirectory": "D:/A_Moblie_BTL/Mobile_BTL/AndroidStudioProjects/moblie_btl/linux",
+    "git.ignoreLimitWarning": true
 }

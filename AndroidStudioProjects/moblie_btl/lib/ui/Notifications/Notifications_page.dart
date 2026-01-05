@@ -57,7 +57,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                         Icon(
                           Icons.error_outline,
                           size: 48,
-                          color: Colors.red.withOpacity(0.7),
+                          color: Colors.red.withValues(alpha: 0.7),
                         ),
                         const SizedBox(height: 16),
                         Text(
@@ -186,13 +186,13 @@ class _NotificationsPageState extends State<NotificationsPage> {
           Container(
             padding: const EdgeInsets.all(30),
             decoration: BoxDecoration(
-              color: primaryColor.withOpacity(0.1),
+              color: primaryColor.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(
               Icons.notifications_none,
               size: 60,
-              color: primaryColor.withOpacity(0.5),
+              color: primaryColor.withValues(alpha: 0.5),
             ),
           ),
           const SizedBox(height: 20),
@@ -249,7 +249,7 @@ class _NotificationCard extends StatelessWidget {
     // Màu viền nhẹ cho thông báo chưa đọc
     final borderColor = notification.isRead
         ? Colors.grey.shade300
-        : primaryColor.withOpacity(0.3);
+        : primaryColor.withValues(alpha: 0.3);
 
     return Card(
       elevation: 2,
@@ -270,7 +270,7 @@ class _NotificationCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(12.0),
                 decoration: BoxDecoration(
-                  color: notification.type.color.withOpacity(0.15),
+                  color: notification.type.color.withValues(alpha: 0.15),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(

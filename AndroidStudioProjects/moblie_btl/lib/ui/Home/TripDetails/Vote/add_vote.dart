@@ -21,7 +21,6 @@ class AddVoteLocationModal extends StatefulWidget {
 class _AddVoteLocationModalState extends State<AddVoteLocationModal> {
   final TextEditingController _locationNameController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
-  final TextEditingController _imageUrlController = TextEditingController();
   final VoteRepository _repository = VoteRepository();
   final NotificationService _notificationService = NotificationService();
 
@@ -51,7 +50,6 @@ class _AddVoteLocationModalState extends State<AddVoteLocationModal> {
   void dispose() {
     _locationNameController.dispose();
     _descriptionController.dispose();
-    _imageUrlController.dispose();
     super.dispose();
   }
 
@@ -74,9 +72,6 @@ class _AddVoteLocationModalState extends State<AddVoteLocationModal> {
         location: _locationNameController.text.trim(),
         description: _descriptionController.text.trim().isNotEmpty
             ? _descriptionController.text.trim()
-            : null,
-        imageUrl: _imageUrlController.text.trim().isNotEmpty
-            ? _imageUrlController.text.trim()
             : null,
         createdBy: currentUser.uid,
       );
@@ -127,7 +122,7 @@ class _AddVoteLocationModalState extends State<AddVoteLocationModal> {
                       _buildTextField(
                         controller: _locationNameController,
                         label: 'Tên địa điểm',
-                        hint: 'VD: Tokyo Skytree',
+                        hint: 'VD: Caffe',
                         icon: Icons.location_on_outlined,
                         validator: (value) {
                           if (value == null || value.trim().isEmpty) {
@@ -135,13 +130,6 @@ class _AddVoteLocationModalState extends State<AddVoteLocationModal> {
                           }
                           return null;
                         },
-                      ),
-                      const SizedBox(height: 25),
-                      _buildTextField(
-                        controller: _imageUrlController,
-                        label: 'URL hình ảnh (Tùy chọn)',
-                        hint: 'https://...',
-                        icon: Icons.image_outlined,
                       ),
                       const SizedBox(height: 25),
                       _buildTextField(
@@ -261,7 +249,7 @@ class _AddVoteLocationModalState extends State<AddVoteLocationModal> {
       style: ElevatedButton.styleFrom(
         backgroundColor: Colors.white,
         foregroundColor: mainBlueColor,
-        disabledBackgroundColor: Colors.white.withOpacity(0.5),
+        disabledBackgroundColor: Colors.white.withValues(alpha: 0.5),
         minimumSize: const Size(double.infinity, 55),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),

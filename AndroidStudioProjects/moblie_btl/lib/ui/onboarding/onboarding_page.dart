@@ -127,7 +127,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                               item.description,
                               textAlign: TextAlign.center,
                               style: TextStyle(
-                                color: Colors.white.withOpacity(0.8),
+                                color: Colors.white.withValues(alpha: 0.8),
                                 fontSize: 16,
                               ),
                             ),
@@ -147,7 +147,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                             Text(
                               'Người đồng hành hoàn hảo cho mọi chuyến đi',
                               style: TextStyle(
-                                color: Colors.white.withOpacity(0.7),
+                                color: Colors.white.withValues(alpha: 0.7),
                                 fontSize: 14,
                               ),
                             ),

@@ -103,13 +103,13 @@ class _ChecklistTabContentState extends State<ChecklistTabContent> {
             Icon(
               Icons.people_outline,
               size: 64,
-              color: Colors.white.withOpacity(0.5),
+              color: Colors.white.withValues(alpha: 0.5),
             ),
             const SizedBox(height: 16),
             Text(
               'Chưa có thành viên nào',
               style: TextStyle(
-                color: Colors.white.withOpacity(0.7),
+                color: Colors.white.withValues(alpha: 0.7),
                 fontSize: 16,
               ),
             ),
@@ -143,7 +143,7 @@ class _ChecklistTabContentState extends State<ChecklistTabContent> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
       decoration: BoxDecoration(
-        color: mainBlueColor.withOpacity(0.85),
+        color: mainBlueColor.withValues(alpha: 0.85),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -152,7 +152,7 @@ class _ChecklistTabContentState extends State<ChecklistTabContent> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: accentGoldColor.withOpacity(0.2),
+              color: accentGoldColor.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(
@@ -188,7 +188,7 @@ class _ChecklistTabContentState extends State<ChecklistTabContent> {
                           vertical: 2,
                         ),
                         decoration: BoxDecoration(
-                          color: accentGoldColor.withOpacity(0.3),
+                          color: accentGoldColor.withValues(alpha: 0.3),
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: const Text(
@@ -209,7 +209,7 @@ class _ChecklistTabContentState extends State<ChecklistTabContent> {
                       ? '$completedCount/$totalCount items hoàn thành'
                       : 'Chưa có vật dụng nào',
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.7),
+                    color: Colors.white.withValues(alpha: 0.7),
                     fontSize: 13,
                   ),
                 ),

@@ -27,7 +27,7 @@ class _SocialLoginButton extends StatelessWidget {
           border: Border.all(color: Colors.black12),
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withOpacity(0.1),
+              color: Colors.grey.withValues(alpha: 0.1),
               spreadRadius: 2,
               blurRadius: 3,
               offset: const Offset(0, 3),
@@ -168,11 +168,11 @@ class _SignUpPageState extends State<SignUpPage> {
                   contentPadding: const EdgeInsets.symmetric(vertical: 18.0, horizontal: 20.0),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12.0),
-                    borderSide: BorderSide(color: primaryColor.withOpacity(0.5), width: 1.5),
+                    borderSide: BorderSide(color: primaryColor.withValues(alpha: 0.5), width: 1.5),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12.0),
-                    borderSide: BorderSide(color: primaryColor.withOpacity(0.5), width: 1.5),
+                    borderSide: BorderSide(color: primaryColor.withValues(alpha: 0.5), width: 1.5),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12.0),

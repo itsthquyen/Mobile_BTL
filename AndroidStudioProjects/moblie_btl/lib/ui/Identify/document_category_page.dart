@@ -83,7 +83,7 @@ class DocumentCategoryPage extends StatelessWidget {
                         Icon(
                           Icons.error_outline,
                           size: 48,
-                          color: Colors.red.withOpacity(0.7),
+                          color: Colors.red.withValues(alpha: 0.7),
                         ),
                         const SizedBox(height: 16),
                         Text(
@@ -157,7 +157,7 @@ class DocumentCategoryPage extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: accentGoldColor.withOpacity(0.2),
+                  color: accentGoldColor.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
@@ -172,7 +172,7 @@ class DocumentCategoryPage extends StatelessWidget {
           Text(
             'Nhấn vào tài liệu để xem toàn màn hình',
             style: TextStyle(
-              color: Colors.white.withOpacity(0.7),
+              color: Colors.white.withValues(alpha: 0.7),
               fontSize: 14,
             ),
           ),
@@ -191,13 +191,13 @@ class DocumentCategoryPage extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: primaryColor.withOpacity(0.1),
+                color: primaryColor.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Icon(
                 _getCategoryIcon(),
                 size: 64,
-                color: primaryColor.withOpacity(0.5),
+                color: primaryColor.withValues(alpha: 0.5),
               ),
             ),
             const SizedBox(height: 24),
@@ -247,7 +247,7 @@ class DocumentCategoryPage extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.08),
+              color: Colors.black.withValues(alpha: 0.08),
               blurRadius: 8,
               offset: const Offset(0, 4),
             ),

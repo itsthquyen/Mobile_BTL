@@ -123,11 +123,11 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                       vertical: 18.0, horizontal: 20.0),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12.0),
-                    borderSide: BorderSide(color: primaryColor.withOpacity(0.5), width: 1.5),
+                    borderSide: BorderSide(color: primaryColor.withValues(alpha: 0.5), width: 1.5),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12.0),
-                    borderSide: BorderSide(color: primaryColor.withOpacity(0.5), width: 1.5),
+                    borderSide: BorderSide(color: primaryColor.withValues(alpha: 0.5), width: 1.5),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12.0),

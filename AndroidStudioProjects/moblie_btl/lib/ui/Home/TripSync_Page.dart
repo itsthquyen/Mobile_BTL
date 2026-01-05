@@ -541,7 +541,7 @@ class _TripSyncContentPageState extends State<TripSyncContentPage> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10)],
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 10)],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -613,7 +613,7 @@ class _TripSyncContentPageState extends State<TripSyncContentPage> {
             image: NetworkImage(trip.coverUrl),
             fit: BoxFit.cover,
             colorFilter: ColorFilter.mode(
-              Colors.black.withOpacity(0.4),
+              Colors.black.withValues(alpha: 0.4),
               BlendMode.darken,
             ),
           ),

@@ -158,7 +158,7 @@ class _AddDocumentDialogState extends State<AddDocumentDialog> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.3),
+                color: Colors.white.withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -211,16 +211,16 @@ class _AddDocumentDialogState extends State<AddDocumentDialog> {
                   style: const TextStyle(color: Colors.white),
                   decoration: InputDecoration(
                     hintText: 'Thêm nhãn ghi chú (tùy chọn)',
-                    hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
+                    hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
                     filled: true,
-                    fillColor: Colors.white.withOpacity(0.1),
+                    fillColor: Colors.white.withValues(alpha: 0.1),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide.none,
                     ),
                     prefixIcon: Icon(
                       Icons.label_outline,
-                      color: Colors.white.withOpacity(0.7),
+                      color: Colors.white.withValues(alpha: 0.7),
                     ),
                   ),
                 ),
@@ -235,7 +235,7 @@ class _AddDocumentDialogState extends State<AddDocumentDialog> {
                     children: [
                       LinearProgressIndicator(
                         value: _uploadProgress,
-                        backgroundColor: Colors.white.withOpacity(0.2),
+                        backgroundColor: Colors.white.withValues(alpha: 0.2),
                         valueColor: const AlwaysStoppedAnimation<Color>(
                           accentGoldColor,
                         ),
@@ -243,7 +243,7 @@ class _AddDocumentDialogState extends State<AddDocumentDialog> {
                       const SizedBox(height: 8),
                       Text(
                         'Đang tải lên... ${(_uploadProgress * 100).toInt()}%',
-                        style: TextStyle(color: Colors.white.withOpacity(0.7)),
+                        style: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
                       ),
                     ],
                   ),
@@ -305,7 +305,7 @@ class _AddDocumentDialogState extends State<AddDocumentDialog> {
                 onPressed: () => Navigator.pop(context),
                 child: Text(
                   'Hủy',
-                  style: TextStyle(color: Colors.white.withOpacity(0.7)),
+                  style: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
                 ),
               ),
             const SizedBox(height: 10),
@@ -329,7 +329,7 @@ class _AddDocumentDialogState extends State<AddDocumentDialog> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: accentGoldColor.withOpacity(0.2),
+                color: accentGoldColor.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(icon, color: accentGoldColor, size: 28),
@@ -346,7 +346,7 @@ class _AddDocumentDialogState extends State<AddDocumentDialog> {
             const Spacer(),
             Icon(
               Icons.arrow_forward_ios,
-              color: Colors.white.withOpacity(0.5),
+              color: Colors.white.withValues(alpha: 0.5),
               size: 18,
             ),
           ],

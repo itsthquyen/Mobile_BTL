@@ -130,7 +130,7 @@ class _EditPictureOptionsState extends State<EditPictureOptions> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.3),
+                color: Colors.white.withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -185,7 +185,7 @@ class _EditPictureOptionsState extends State<EditPictureOptions> {
                     children: [
                       LinearProgressIndicator(
                         value: null, // Indeterminate progress for upload
-                        backgroundColor: Colors.white.withOpacity(0.2),
+                        backgroundColor: Colors.white.withValues(alpha: 0.2),
                         valueColor: const AlwaysStoppedAnimation<Color>(
                           accentGoldColor,
                         ),
@@ -255,7 +255,7 @@ class _EditPictureOptionsState extends State<EditPictureOptions> {
                 onPressed: () => Navigator.pop(context),
                 child: Text(
                   'Hủy',
-                  style: TextStyle(color: Colors.white.withOpacity(0.7)),
+                  style: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
                 ),
               ),
             const SizedBox(height: 10),
@@ -279,7 +279,7 @@ class _EditPictureOptionsState extends State<EditPictureOptions> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: accentGoldColor.withOpacity(0.2),
+                color: accentGoldColor.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(icon, color: accentGoldColor, size: 28),
@@ -296,7 +296,7 @@ class _EditPictureOptionsState extends State<EditPictureOptions> {
             const Spacer(),
             Icon(
               Icons.arrow_forward_ios,
-              color: Colors.white.withOpacity(0.5),
+              color: Colors.white.withValues(alpha: 0.5),
               size: 18,
             ),
           ],

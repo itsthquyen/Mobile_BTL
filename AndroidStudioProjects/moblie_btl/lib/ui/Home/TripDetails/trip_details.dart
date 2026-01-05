@@ -178,7 +178,7 @@ class _TripDetailsPageState extends State<TripDetailsPage> {
                       colors: [
                         const Color(0xFFE8ECF2),
                         const Color(0xFF8DA0C1),
-                        mainBlueColor.withOpacity(0.8),
+                        mainBlueColor.withValues(alpha: 0.8),
                         mainBlueColor,
                       ],
                       stops: const [0.0, 0.3, 0.7, 1.0],
@@ -292,8 +292,7 @@ class _TripDetailsPageState extends State<TripDetailsPage> {
               ),
               Row(
                 children: [
-                  const Icon(Icons.search, color: Colors.white, size: 24),
-                  const SizedBox(width: 8),
+
                   PopupMenuButton<String>(
                     onSelected: _onMenuItemSelected,
                     icon: const Icon(Icons.more_horiz, color: Colors.white, size: 24),
