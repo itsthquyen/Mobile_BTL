@@ -131,7 +131,7 @@ class _SignUpPageState extends State<SignUpPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
-              const Spacer(flex: 1),
+              const SizedBox(height: 80), // Thay thế Spacer bằng SizedBox
 
               // Tiêu đề
               const Text(

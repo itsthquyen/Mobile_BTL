@@ -153,7 +153,7 @@ class _LoginPageState extends State<LoginPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
-              const Spacer(flex: 1),
+              const SizedBox(height: 80), // Thay thế Spacer bằng SizedBox để tránh lỗi layout
 
               Text(
                 'Đăng nhập', // Sửa: Login here -> Đăng nhập

@@ -157,9 +157,6 @@ class _TripDetailsPageState extends State<TripDetailsPage> {
   Widget build(BuildContext context) {
     bool isAdmin = currentUserRole == 'admin';
 
-    // Điều kiện để hiển thị nút Thêm
-    bool shouldShowAddButton = _selectedIndex != 2; // Không hiển thị ở tab Danh sách
-
     SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
       statusBarIconBrightness: Brightness.light,
@@ -195,7 +192,7 @@ class _TripDetailsPageState extends State<TripDetailsPage> {
                     Expanded(child: _buildPageContent()),
                   ],
                 ),
-                if (shouldShowAddButton)
+                if (isAdmin || _selectedIndex == 3) // ADMIN CÓ THỂ THÊM MỌI THỨ, THÀNH VIÊN CÓ THỂ THÊM VOTE
                   Align(
                     alignment: Alignment.bottomCenter,
                     child: Padding(
@@ -375,14 +372,17 @@ class _TripDetailsPageState extends State<TripDetailsPage> {
         ? "Thêm lịch trình"
         : _selectedIndex == 1
         ? "Thêm chi phí"
-        : "Thêm địa điểm"; // Bỏ "Thêm mục"
-
+        : _selectedIndex == 2
+        ? "Thêm mục"
+        : "Thêm địa điểm";
     return InkWell(
       onTap: () {
         if (_selectedIndex == 0) {
           _showAddScheduleModal(context);
         } else if (_selectedIndex == 1) {
           _showAddExpenseModal(context);
+        } else if (_selectedIndex == 2) {
+          print("Thêm mục checklist");
         } else if (_selectedIndex == 3) {
           _showAddVoteModal(context);
         }

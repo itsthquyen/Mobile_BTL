@@ -23,8 +23,10 @@ class _TripsyncPageState extends State<TripsyncPage> {
   final NotificationRepository _notificationRepository =
       NotificationRepository();
 
-  final List<Widget> _pages = [
-    const TripSyncContentPage(),
+  late final List<Widget> _pages = [
+    TripSyncContentPage(
+      onNotificationTap: () => _onItemTapped(3),
+    ),
     const IdentifyPage(),
     const NotificationsPage(),
     const ProfilePage(),
@@ -181,7 +183,9 @@ class _TripsyncPageState extends State<TripsyncPage> {
 // ************ TRIPSYNC CONTENT PAGE ***********
 
 class TripSyncContentPage extends StatefulWidget {
-  const TripSyncContentPage({super.key});
+  final VoidCallback? onNotificationTap;
+
+  const TripSyncContentPage({super.key, this.onNotificationTap});
 
   @override
   State<TripSyncContentPage> createState() => _TripSyncContentPageState();
@@ -189,6 +193,8 @@ class TripSyncContentPage extends StatefulWidget {
 
 class _TripSyncContentPageState extends State<TripSyncContentPage> {
   final PageController _pageController = PageController(viewportFraction: 0.85);
+  final NotificationRepository _notificationRepository =
+      NotificationRepository();
 
   List<Trip>? _cachedDiscoveryTrips;
   String? _lastUid;
@@ -470,13 +476,51 @@ class _TripSyncContentPageState extends State<TripSyncContentPage> {
               ),
             ],
           ),
-          IconButton(
-            icon: const Icon(
-              Icons.notifications_none,
-              color: Colors.white,
-              size: 28,
-            ),
-            onPressed: () {},
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              IconButton(
+                icon: const Icon(
+                  Icons.notifications_none,
+                  color: Colors.white,
+                  size: 28,
+                ),
+                onPressed: widget.onNotificationTap,
+              ),
+              StreamBuilder<int>(
+                stream: _notificationRepository.watchUnreadCount(
+                    FirebaseAuth.instance.currentUser?.uid ?? ''),
+                builder: (context, snapshot) {
+                  final unreadCount = snapshot.data ?? 0;
+                  if (unreadCount == 0) return const SizedBox.shrink();
+
+                  return Positioned(
+                    right: 8,
+                    top: 8,
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: const BoxDecoration(
+                        color: Colors.red,
+                        shape: BoxShape.circle,
+                      ),
+                      constraints: const BoxConstraints(
+                        minWidth: 16,
+                        minHeight: 16,
+                      ),
+                      child: Text(
+                        unreadCount > 99 ? '99+' : unreadCount.toString(),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ],
           ),
         ],
       ),

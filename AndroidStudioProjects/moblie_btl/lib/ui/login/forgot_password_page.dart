@@ -84,7 +84,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
-              const Spacer(flex: 1),
+              const SizedBox(height: 40), // Thay thế Spacer bằng SizedBox
 
               // 1. Tiêu đề
               const Text(
@@ -185,7 +185,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                   ),
                 ),
               ),
-              const Spacer(flex: 3),
+              const SizedBox(height: 100), // Thay thế Spacer bằng SizedBox
             ],
           ),
         ),
