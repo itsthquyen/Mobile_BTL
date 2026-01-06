@@ -12,6 +12,8 @@ class AiTripPlannerPage extends StatefulWidget {
 class _AiTripPlannerPageState extends State<AiTripPlannerPage> {
   final TextEditingController _destinationController = TextEditingController();
   final TextEditingController _durationController = TextEditingController();
+  final TextEditingController _fromLocationController = TextEditingController();
+  final TextEditingController _peopleCountController = TextEditingController();
   final AiService _aiService = AiService();
 
   String _result = "";
@@ -20,8 +22,10 @@ class _AiTripPlannerPageState extends State<AiTripPlannerPage> {
   void _generateTrip() async {
     final dest = _destinationController.text.trim();
     final duration = _durationController.text.trim();
+    final fromLoc = _fromLocationController.text.trim();
+    final people = _peopleCountController.text.trim();
 
-    if (dest.isEmpty || duration.isEmpty) {
+    if (dest.isEmpty || duration.isEmpty || fromLoc.isEmpty || people.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Vui lòng nhập đầy đủ thông tin")),
       );
@@ -33,7 +37,7 @@ class _AiTripPlannerPageState extends State<AiTripPlannerPage> {
       _result = "";
     });
 
-    final schedule = await _aiService.generateTripSchedule(dest, duration);
+    final schedule = await _aiService.generateTripSchedule(dest, duration, fromLoc, people);
 
     setState(() {
       _isLoading = false;
@@ -69,6 +73,25 @@ class _AiTripPlannerPageState extends State<AiTripPlannerPage> {
                 labelText: "Thời gian (VD: 3 ngày 2 đêm)",
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                 prefixIcon: const Icon(Icons.timer),
+              ),
+            ),
+            const SizedBox(height: 15),
+            TextField(
+              controller: _fromLocationController,
+              decoration: InputDecoration(
+                labelText: "Điểm xuất phát (VD: Hà Nội)",
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                prefixIcon: const Icon(Icons.flight_takeoff),
+              ),
+            ),
+            const SizedBox(height: 15),
+            TextField(
+              controller: _peopleCountController,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                labelText: "Số người (VD: 2 người)",
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                prefixIcon: const Icon(Icons.people),
               ),
             ),
             const SizedBox(height: 20),

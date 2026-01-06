@@ -8,6 +8,8 @@ import 'package:moblie_btl/ui/Home/TripDetails/trip_details.dart';
 import 'package:moblie_btl/ui/Home/new_Trip/new_Trip.dart';
 import 'package:moblie_btl/repository/notification_repository.dart';
 import '../../models/trip.dart';
+import '../../services/ai_service.dart';
+import 'dart:math';
 
 const primaryColor = Color(0xFF153359);
 
@@ -225,6 +227,97 @@ class _TripSyncContentPageState extends State<TripSyncContentPage> {
         });
   }
 
+  bool _isGenerating = false;
+
+  Future<void> _generateAndSaveMockTrips() async {
+    setState(() => _isGenerating = true);
+
+    try {
+      final aiService = AiService();
+      final mockData = await aiService.generateSampleTrips();
+
+      if (mockData.isEmpty) {
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("AI chưa nghĩ ra ý tưởng nào, hãy thử lại!")));
+        return;
+      }
+
+      final batch = FirebaseFirestore.instance.batch();
+      final collection = FirebaseFirestore.instance.collection('trips');
+
+      final random = Random();
+      final covers = [
+        'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1', // Boat
+        'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800', // Travel van
+        'https://images.unsplash.com/photo-1507525428034-b723cf961d3e', // Beach
+        'https://images.unsplash.com/photo-1493246507139-91e8fad9978e', // Mountain
+        'https://images.unsplash.com/photo-1504609773096-104ff2c73ba4', // Food
+      ];
+
+      for (var data in mockData) {
+        final docRef = collection.doc();
+        final startDate = DateTime.now().add(Duration(days: random.nextInt(30)));
+        final endDate = startDate.add(const Duration(days: 3)); // Default range
+
+        batch.set(docRef, { // Removed await
+          'name': data['name'],
+          'coverUrl': covers[random.nextInt(covers.length)],
+          'members': {}, // Empty members = Discovery trip
+          'memberCount': 0,
+          'startDate': startDate,
+          'endDate': endDate,
+          'description': data['description'],
+          'destination': data['destination'],
+          'generatedByAI': true,
+        });
+
+        // Xử lý Lịch trình (Itinerary)
+        if (data['days'] != null && data['days'] is List) {
+          final days = data['days'] as List;
+          final itineraryCollection = docRef.collection('itinerary');
+
+          for (var dayItem in days) {
+            final dayIndex = (dayItem['day'] as int? ?? 1) - 1; // 0-based
+             final currentDate = startDate.add(Duration(days: dayIndex));
+
+            if (dayItem['activities'] != null && dayItem['activities'] is List) {
+              final activities = dayItem['activities'] as List;
+              for (var act in activities) {
+                final startHour = act['startHour'] as int? ?? 8;
+                final duration = (act['durationHours'] as num? ?? 1.0).toDouble();
+                
+                final actStartTime = DateTime(currentDate.year, currentDate.month, currentDate.day, startHour, 0);
+                final actEndTime = actStartTime.add(Duration(minutes: (duration * 60).toInt()));
+
+                final actDoc = itineraryCollection.doc();
+                batch.set(actDoc, {
+                  'title': act['title'] ?? 'Hoạt động',
+                  'locationName': act['location'] ?? '',
+                  'description': act['description'] ?? '',
+                  'startTime': Timestamp.fromDate(actStartTime),
+                  'endTime': Timestamp.fromDate(actEndTime),
+                  'type': 'activity',
+                  'status': 'planned',
+                  'createdAt': FieldValue.serverTimestamp(),
+                });
+              }
+            }
+          }
+        }
+      }
+
+      await batch.commit();
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Đã thêm ${mockData.length} chuyến đi mới từ AI!")));
+      }
+
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Lỗi: $e")));
+    } finally {
+      if (mounted) setState(() => _isGenerating = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
@@ -278,14 +371,46 @@ class _TripSyncContentPageState extends State<TripSyncContentPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Padding(
-                      padding: EdgeInsets.only(bottom: 8.0, left: 24),
-                      child: Text(
-                        "Khám phá hành trình mới ✨",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8.0, left: 24, right: 24),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            "Khám phá hành trình mới ✨",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          if (_isGenerating)
+                            const SizedBox(
+                              width: 20, 
+                              height: 20, 
+                              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)
+                            )
+                          else
+                            GestureDetector(
+                              onTap: _generateAndSaveMockTrips,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.2),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Row(
+                                  children: [
+                                    Icon(Icons.auto_awesome, color: Colors.yellow, size: 16),
+                                    SizedBox(width: 4),
+                                    Text(
+                                      "Tạo mẫu",
+                                      style: TextStyle(color: Colors.white, fontSize: 12),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            )
+                        ],
                       ),
                     ),
                     if (discoveryTrips.isNotEmpty)

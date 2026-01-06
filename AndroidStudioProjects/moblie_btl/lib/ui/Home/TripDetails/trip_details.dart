@@ -211,7 +211,11 @@ class _TripDetailsPageState extends State<TripDetailsPage> {
   Widget _buildPageContent() {
     switch (_selectedIndex) {
       case 0:
-        return ScheduleTabContent(tripId: widget.trip.id);
+      case 0:
+        return ScheduleTabContent(
+          tripId: widget.trip.id,
+          isAdmin: currentUserRole == 'admin',
+        );
       case 1:
         return ExpensesTabContent(tripId: widget.trip.id);
       case 2:

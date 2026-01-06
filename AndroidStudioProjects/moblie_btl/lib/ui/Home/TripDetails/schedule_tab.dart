@@ -8,8 +8,13 @@ const accentGoldColor = Color(0xFFEAD8B1);
 
 class ScheduleTabContent extends StatelessWidget {
   final String tripId;
+  final bool isAdmin;
 
-  const ScheduleTabContent({super.key, required this.tripId});
+  const ScheduleTabContent({
+    super.key, 
+    required this.tripId, 
+    required this.isAdmin
+  });
 
   Stream<QuerySnapshot> _getScheduleStream() {
     return FirebaseFirestore.instance
@@ -118,10 +123,10 @@ class ScheduleTabContent extends StatelessWidget {
     final startTime = (data['startTime'] as Timestamp).toDate();
     final endTime = (data['endTime'] as Timestamp).toDate();
     
-    // Tạm thời lấy role từ member list, sau này có thể truyền trực tiếp
-    final isAdmin = true; // Giả sử user là admin để test, bạn sẽ cần logic lấy role thật
+    // Sử dụng quyền được truyền vào
+    final canEdit = isAdmin; 
 
-    return Container(
+    final itemContent = Container(
       margin: const EdgeInsets.only(bottom: 12.0),
       decoration: BoxDecoration(
         color: primaryColor.withValues(alpha: 0.3),
@@ -129,7 +134,7 @@ class ScheduleTabContent extends StatelessWidget {
         border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
       ),
       child: InkWell(
-        onTap: isAdmin ? () => _showEditScheduleModal(context, docId, data) : null,
+        onTap: canEdit ? () => _showEditScheduleModal(context, docId, data) : null,
         borderRadius: BorderRadius.circular(12),
         child: IntrinsicHeight(
           child: Row(
@@ -181,13 +186,74 @@ class ScheduleTabContent extends StatelessWidget {
                   ),
                 ),
               ),
-              if (isAdmin) // Chỉ admin mới thấy nút mũi tên
+              if (canEdit)
                 const Icon(Icons.chevron_right, color: Colors.white),
-                const SizedBox(width: 8) // Thêm padding
+              const SizedBox(width: 8)
             ],
           ),
         ),
       ),
+    );
+
+    if (!canEdit) return itemContent;
+
+    return Dismissible(
+      key: Key(docId),
+      direction: DismissDirection.endToStart,
+      background: Container(
+        margin: const EdgeInsets.only(bottom: 12.0),
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 20.0),
+        decoration: BoxDecoration(
+          color: Colors.red,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: const Icon(Icons.delete, color: Colors.white),
+      ),
+      confirmDismiss: (direction) async {
+        return await showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: const Text("Xác nhận xóa"),
+              content: const Text("Bạn có chắc chắn muốn xóa lịch trình này không?"),
+              actions: <Widget>[
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: const Text("Hủy"),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(true),
+                  child: const Text("Xóa", style: TextStyle(color: Colors.red)),
+                ),
+              ],
+            );
+          },
+        );
+      },
+      onDismissed: (direction) async {
+        try {
+          await FirebaseFirestore.instance
+              .collection('trips')
+              .doc(tripId)
+              .collection('itinerary')
+              .doc(docId)
+              .delete();
+          
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text("Đã xóa lịch trình")),
+            );
+          }
+        } catch (e) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text("Lỗi xóa: $e")),
+            );
+          }
+        }
+      },
+      child: itemContent,
     );
   }
 
