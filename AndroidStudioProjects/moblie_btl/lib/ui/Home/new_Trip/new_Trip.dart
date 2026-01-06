@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:moblie_btl/ui/Home/new_Trip/create_trip.dart';
 import 'join_trip.dart';
+import 'ai_trip_planner.dart';
 
 const primaryColor = Color(0xFF153359);
 
@@ -71,6 +72,21 @@ class NewTripOptionsModal extends StatelessWidget {
               title: 'Tham gia chuyến đi',
               subtitle: 'Nhập mã mời hoặc liên kết để tham gia.',
               onTap: () => _joinExistingTrip(context),
+            ),
+
+            const SizedBox(height: 15),
+
+            // ===== AI TRIP PLANNER =====
+            _buildOptionCard(
+              icon: Icons.auto_awesome,
+              title: 'Tạo chuyến đi với AI',
+              subtitle: 'Nhập điểm đến để AI tự động lên lịch trình.',
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.of(context).push(
+                    MaterialPageRoute(builder: (context) => const AiTripPlannerPage())
+                );
+              },
             ),
 
             const SizedBox(height: 20),
