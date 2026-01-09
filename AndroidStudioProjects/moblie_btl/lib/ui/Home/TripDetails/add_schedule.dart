@@ -91,7 +91,7 @@ class _AddScheduleModalState extends State<AddScheduleModal> {
               surface: darkFieldColor,
               onSurface: lightTextColor,
             ),
-            dialogBackgroundColor: primaryColor,
+            dialogTheme: DialogThemeData(backgroundColor: primaryColor),
           ),
           child: child!,
         );
@@ -111,7 +111,7 @@ class _AddScheduleModalState extends State<AddScheduleModal> {
               surface: darkFieldColor,
               onSurface: lightTextColor,
             ),
-            dialogBackgroundColor: primaryColor,
+            dialogTheme: DialogThemeData(backgroundColor: primaryColor),
           ),
           child: child!,
         );

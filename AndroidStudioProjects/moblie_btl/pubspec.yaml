@@ -23,6 +23,8 @@ dependencies:
   file_picker: ^8.0.0
   collection: ^1.18.0 # Thêm dòng này
   google_generative_ai: ^0.4.7
+  google_sign_in: ^6.2.1
+  flutter_facebook_auth: ^7.0.0
 
 dev_dependencies:
   flutter_test:

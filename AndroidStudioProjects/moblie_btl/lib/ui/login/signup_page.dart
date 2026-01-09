@@ -2,6 +2,11 @@
 
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:moblie_btl/ui/Home/TripSync_Page.dart';
+import 'package:moblie_btl/ui/onboarding/onboarding_page.dart';
 import 'login_page.dart';
 
 // Các hằng số màu sắc
@@ -27,7 +32,7 @@ class _SocialLoginButton extends StatelessWidget {
           border: Border.all(color: Colors.black12),
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withValues(alpha: 0.1),
+              color: Colors.grey.withOpacity(0.1),
               spreadRadius: 2,
               blurRadius: 3,
               offset: const Offset(0, 3),
@@ -36,7 +41,7 @@ class _SocialLoginButton extends StatelessWidget {
         ),
         child: Text(
           icon,
-          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black),
         ),
       ),
     );
@@ -118,6 +123,108 @@ class _SignUpPageState extends State<SignUpPage> {
     }
   }
 
+  // --- HÀM KIỂM TRA NGƯỜI DÙNG MỚI ---
+  Future<bool> _checkIfNewUser(User user) async {
+    try {
+      final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+      return !doc.exists;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // --- HÀM CHUYỂN HƯỚNG SAU KHI ĐĂNG NHẬP ---
+  Future<void> _handleSignIn(User user) async {
+    if (!mounted) return;
+    final isNew = await _checkIfNewUser(user);
+    if (!mounted) return;
+
+    if (isNew) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => const OnboardingPage()),
+      );
+    } else {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => const TripsyncPage()),
+      );
+    }
+  }
+
+  // --- HÀM XỬ LÝ ĐĂNG NHẬP BẰNG GOOGLE ---
+  Future<void> _signInWithGoogle() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+      if (googleUser == null) {
+        setState(() => _isLoading = false);
+        return;
+      }
+
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final OAuthCredential credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      final UserCredential userCredential = await _auth.signInWithCredential(credential);
+      final User? user = userCredential.user;
+
+      if (user != null) {
+        await _handleSignIn(user);
+      }
+
+    } on FirebaseAuthException catch (e) {
+      _errorMessage = 'Lỗi đăng nhập Google: ${e.message}';
+    } catch (e) {
+      _errorMessage = 'Đã có lỗi xảy ra: $e';
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  // --- HÀM XỬ LÝ ĐĂNG NHẬP BẰNG FACEBOOK ---
+  Future<void> _signInWithFacebook() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final LoginResult result = await FacebookAuth.instance.login();
+
+      if (result.status == LoginStatus.success) {
+        final AccessToken accessToken = result.accessToken!;
+        final OAuthCredential credential = FacebookAuthProvider.credential(accessToken.tokenString);
+        final UserCredential userCredential = await _auth.signInWithCredential(credential);
+        final User? user = userCredential.user;
+
+        if (user != null) {
+          await _handleSignIn(user);
+        }
+      } else {
+        _errorMessage = 'Đăng nhập Facebook thất bại: ${result.message}';
+      }
+    } on FirebaseAuthException catch (e) {
+      _errorMessage = 'Lỗi đăng nhập Facebook: ${e.message}';
+    } catch (e) {
+      _errorMessage = 'Đã có lỗi xảy ra: $e';
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
@@ -131,9 +238,8 @@ class _SignUpPageState extends State<SignUpPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
-              const SizedBox(height: 80), // Thay thế Spacer bằng SizedBox
+              const SizedBox(height: 80),
 
-              // Tiêu đề
               const Text(
                 'Tạo tài khoản',
                 textAlign: TextAlign.center,
@@ -145,7 +251,6 @@ class _SignUpPageState extends State<SignUpPage> {
               ),
               const SizedBox(height: 8),
 
-              // Mô tả
               const Text(
                 'Tạo tài khoản để khám phá các tính năng tuyệt vời của ứng dụng.',
                 textAlign: TextAlign.center,
@@ -156,7 +261,6 @@ class _SignUpPageState extends State<SignUpPage> {
               ),
               const SizedBox(height: 40),
 
-              // Ô nhập Email
               TextField(
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
@@ -168,11 +272,11 @@ class _SignUpPageState extends State<SignUpPage> {
                   contentPadding: const EdgeInsets.symmetric(vertical: 18.0, horizontal: 20.0),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12.0),
-                    borderSide: BorderSide(color: primaryColor.withValues(alpha: 0.5), width: 1.5),
+                    borderSide: BorderSide(color: primaryColor.withOpacity(0.5), width: 1.5),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12.0),
-                    borderSide: BorderSide(color: primaryColor.withValues(alpha: 0.5), width: 1.5),
+                    borderSide: BorderSide(color: primaryColor.withOpacity(0.5), width: 1.5),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12.0),
@@ -182,7 +286,6 @@ class _SignUpPageState extends State<SignUpPage> {
               ),
               const SizedBox(height: 20),
 
-              // Ô nhập Mật khẩu
               TextField(
                 controller: _passwordController,
                 obscureText: true,
@@ -199,7 +302,6 @@ class _SignUpPageState extends State<SignUpPage> {
               ),
               const SizedBox(height: 20),
 
-              // Ô xác nhận Mật khẩu
               TextField(
                 controller: _confirmPasswordController,
                 obscureText: true,
@@ -216,7 +318,6 @@ class _SignUpPageState extends State<SignUpPage> {
               ),
               const SizedBox(height: 25),
 
-              // Hiển thị thông báo lỗi
               if (_errorMessage != null)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 10.0),
@@ -227,7 +328,6 @@ class _SignUpPageState extends State<SignUpPage> {
                   ),
                 ),
 
-              // Nút Đăng ký
               SizedBox(
                 height: 55,
                 child: ElevatedButton(
@@ -253,7 +353,6 @@ class _SignUpPageState extends State<SignUpPage> {
               ),
               const SizedBox(height: 25),
 
-              // Nút quay lại trang đăng nhập
               TextButton(
                 onPressed: () {
                   Navigator.of(context).pushReplacement(
@@ -269,7 +368,6 @@ class _SignUpPageState extends State<SignUpPage> {
               ),
               const SizedBox(height: 30),
 
-              // Chữ "Hoặc tiếp tục với"
               const Text(
                 'Hoặc tiếp tục với',
                 textAlign: TextAlign.center,
@@ -281,13 +379,18 @@ class _SignUpPageState extends State<SignUpPage> {
               ),
               const SizedBox(height: 20),
 
-              // Các nút đăng nhập mạng xã hội
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: <Widget>[
-                  _SocialLoginButton(icon: 'G', onTap: () {}),
+                  _SocialLoginButton(
+                    icon: 'G',
+                    onTap: _isLoading ? () {} : _signInWithGoogle,
+                  ),
                   const SizedBox(width: 20),
-                  _SocialLoginButton(icon: 'f', onTap: () {}),
+                  _SocialLoginButton(
+                    icon: 'f',
+                    onTap: _isLoading ? () {} : _signInWithFacebook,
+                  ),
                 ],
               ),
             ],

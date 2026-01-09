@@ -2,6 +2,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:moblie_btl/ui/Home/TripSync_Page.dart';
 import 'package:moblie_btl/ui/onboarding/onboarding_page.dart';
@@ -37,7 +39,7 @@ class _SocialLoginButton extends StatelessWidget {
           border: Border.all(color: Colors.black12),
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withValues(alpha: 0.1),
+              color: Colors.grey.withOpacity(0.1),
               spreadRadius: 2,
               blurRadius: 3,
               offset: const Offset(0, 3),
@@ -46,7 +48,7 @@ class _SocialLoginButton extends StatelessWidget {
         ),
         child: Text(
           icon,
-          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black),
         ),
       ),
     );
@@ -87,8 +89,27 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  // --- HÀM XỬ LÝ ĐĂNG NHẬP ---
-  Future<void> _signIn() async {
+  // --- HÀM CHUYỂN HƯỚNG SAU KHI ĐĂNG NHẬP ---
+  Future<void> _handleSignIn(User user) async {
+    if (!mounted) return;
+    final isNew = await _checkIfNewUser(user);
+    if (!mounted) return;
+
+    if (isNew) {
+      // Chuyển đến Onboarding nếu là người dùng mới
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => const OnboardingPage()),
+      );
+    } else {
+      // Chuyển đến Trang chủ nếu là người dùng cũ
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => const TripsyncPage()),
+      );
+    }
+  }
+
+  // --- HÀM XỬ LÝ ĐĂNG NHẬP BẰNG EMAIL/PASSWORD ---
+  Future<void> _signInWithEmail() async {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -99,26 +120,10 @@ class _LoginPageState extends State<LoginPage> {
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
-      
-      final user = credential.user;
-      if (user == null || !mounted) return;
-      
-      
-      // KIỂM TRA NGƯỜI DÙNG MỚI HAY CŨ
-      final isNew = await _checkIfNewUser(user);
-      
-      if (!mounted) return;
 
-      if (isNew) {
-        // Chuyển đến Onboarding nếu là người dùng mới
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const OnboardingPage()), 
-        );
-      } else {
-        // Chuyển đến Trang chủ nếu là người dùng cũ
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const TripsyncPage()),
-        );
+      final user = credential.user;
+      if (user != null) {
+        await _handleSignIn(user);
       }
 
     } on FirebaseAuthException catch (e) {
@@ -141,6 +146,82 @@ class _LoginPageState extends State<LoginPage> {
       }
     }
   }
+
+  // --- HÀM XỬ LÝ ĐĂNG NHẬP BẰNG GOOGLE ---
+  Future<void> _signInWithGoogle() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+      if (googleUser == null) {
+        setState(() => _isLoading = false);
+        return;
+      }
+
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final OAuthCredential credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      final UserCredential userCredential = await _auth.signInWithCredential(credential);
+      final User? user = userCredential.user;
+
+      if (user != null) {
+        await _handleSignIn(user);
+      }
+
+    } on FirebaseAuthException catch (e) {
+      _errorMessage = 'Lỗi đăng nhập Google: ${e.message}';
+    } catch (e) {
+      _errorMessage = 'Đã có lỗi xảy ra: $e';
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  // --- HÀM XỬ LÝ ĐĂNG NHẬP BẰNG FACEBOOK ---
+  Future<void> _signInWithFacebook() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final LoginResult result = await FacebookAuth.instance.login();
+
+      if (result.status == LoginStatus.success) {
+        final AccessToken accessToken = result.accessToken!;
+        final OAuthCredential credential = FacebookAuthProvider.credential(accessToken.tokenString);
+        final UserCredential userCredential = await _auth.signInWithCredential(credential);
+        final User? user = userCredential.user;
+
+        if (user != null) {
+          await _handleSignIn(user);
+        }
+      } else {
+        _errorMessage = 'Đăng nhập Facebook thất bại: ${result.message}';
+      }
+    } on FirebaseAuthException catch (e) {
+      _errorMessage = 'Lỗi đăng nhập Facebook: ${e.message}';
+    } catch (e) {
+      _errorMessage = 'Đã có lỗi xảy ra: $e';
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
 
   // --- PHƯƠNG THỨC BUILD GIAO DIỆN ---
   @override
@@ -192,11 +273,11 @@ class _LoginPageState extends State<LoginPage> {
                   contentPadding: const EdgeInsets.symmetric(vertical: 18.0, horizontal: 20.0),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12.0),
-                    borderSide: BorderSide(color: primaryColor.withValues(alpha: 0.5), width: 1.5),
+                    borderSide: BorderSide(color: primaryColor.withOpacity(0.5), width: 1.5),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12.0),
-                    borderSide: BorderSide(color: primaryColor.withValues(alpha: 0.5), width: 1.5),
+                    borderSide: BorderSide(color: primaryColor.withOpacity(0.5), width: 1.5),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12.0),
@@ -252,7 +333,7 @@ class _LoginPageState extends State<LoginPage> {
               SizedBox(
                 height: 55,
                 child: ElevatedButton(
-                  onPressed: _isLoading ? null : _signIn,
+                  onPressed: _isLoading ? null : _signInWithEmail,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: primaryColor,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
@@ -291,9 +372,17 @@ class _LoginPageState extends State<LoginPage> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: <Widget>[
-                  _SocialLoginButton(icon: 'G', onTap: () {}, primaryColor: primaryColor),
+                  _SocialLoginButton(
+                      icon: 'G',
+                      onTap: _isLoading ? () {} : _signInWithGoogle,
+                      primaryColor: primaryColor
+                  ),
                   const SizedBox(width: 20),
-                  _SocialLoginButton(icon: 'f', onTap: () {}, primaryColor: primaryColor),
+                  _SocialLoginButton(
+                      icon: 'f',
+                      onTap: _isLoading ? () {} : _signInWithFacebook,
+                      primaryColor: primaryColor
+                  ),
                 ],
               ),
             ],
