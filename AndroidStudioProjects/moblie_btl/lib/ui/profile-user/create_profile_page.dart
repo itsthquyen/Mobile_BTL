@@ -1,6 +1,6 @@
 // views/create_profile_page.dart
 import 'package:flutter/material.dart';
-import '../../controllers/create_profile_controller.dart';
+import '../../repository/create_profile_controller.dart';
 import '../Home/TripSync_Page.dart';
 
 const primaryColor = Color(0xFF153359);

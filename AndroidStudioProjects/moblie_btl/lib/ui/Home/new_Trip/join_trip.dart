@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:moblie_btl/controllers/trip_controller.dart'; // Import Controller
+
+
+import '../../../repository/trip_controller.dart'; // Import Controller
 
 // ===== CONSTANTS =====
 const primaryColor = Color(0xFF153359);

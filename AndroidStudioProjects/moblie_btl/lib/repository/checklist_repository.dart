@@ -1,6 +1,6 @@
 // lib/repository/checklist_repository.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:moblie_btl/model/checklist_item.dart';
+import 'package:moblie_btl/models/checklist_item.dart';
 
 /// Repository xử lý các thao tác CRUD cho Checklist trên Firestore
 ///

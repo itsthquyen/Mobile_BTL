@@ -2,7 +2,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:moblie_btl/repository/checklist_repository.dart';
-import 'package:moblie_btl/model/checklist_item.dart';
+import 'package:moblie_btl/models/checklist_item.dart';
 import 'package:moblie_btl/services/notification_service.dart';
 
 // Color constants

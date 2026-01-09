@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:moblie_btl/controllers/expense_controller.dart';
-import 'package:moblie_btl/controllers/trip_controller.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../../../../repository/expense_controller.dart';
+import '../../../../repository/trip_controller.dart';
 
 const Color mainBlueColor = Color(0xFF153359);
 const Color darkFieldColor = Color(0xFF2C436D);

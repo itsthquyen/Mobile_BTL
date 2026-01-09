@@ -2,7 +2,7 @@
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:moblie_btl/model/id_document.dart';
+import 'package:moblie_btl/models/id_document.dart';
 import 'package:moblie_btl/services/notification_service.dart';
 
 /// Repository xử lý các thao tác CRUD cho ID Documents trên Firestore và Firebase Storage

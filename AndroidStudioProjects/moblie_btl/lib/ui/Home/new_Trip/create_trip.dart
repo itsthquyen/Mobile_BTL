@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:moblie_btl/controllers/trip_controller.dart'; // Import Controller
+
+
+import '../../../repository/trip_controller.dart'; // Import Controller
 
 const primaryColor = Color(0xFF153359);
 const inputFillColor = Color(0xFFF0F4F8);

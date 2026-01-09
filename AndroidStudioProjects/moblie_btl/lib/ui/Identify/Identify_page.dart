@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:moblie_btl/model/id_document.dart';
+import 'package:moblie_btl/models/id_document.dart';
 import 'package:moblie_btl/repository/id_document_repository.dart';
 import 'document_category_page.dart';
 

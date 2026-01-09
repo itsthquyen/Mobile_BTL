@@ -1,6 +1,6 @@
 // lib/ui/Identify/document_category_page.dart
 import 'package:flutter/material.dart';
-import 'package:moblie_btl/model/id_document.dart';
+import 'package:moblie_btl/models/id_document.dart';
 import 'package:moblie_btl/repository/id_document_repository.dart';
 import 'add_document_dialog.dart';
 import 'document_viewer_page.dart';
