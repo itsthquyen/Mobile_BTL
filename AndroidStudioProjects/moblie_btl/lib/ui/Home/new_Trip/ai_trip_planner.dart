@@ -37,7 +37,12 @@ class _AiTripPlannerPageState extends State<AiTripPlannerPage> {
       _result = "";
     });
 
-    final schedule = await _aiService.generateTripSchedule(dest, duration, fromLoc, people);
+    final schedule = await _aiService.generateTripSchedule(
+      dest,
+      duration,
+      fromLoc,
+      people,
+    );
 
     setState(() {
       _isLoading = false;
@@ -49,7 +54,10 @@ class _AiTripPlannerPageState extends State<AiTripPlannerPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Tạo Chuyến Đi Thông Minh ✨", style: TextStyle(color: Colors.white)),
+        title: const Text(
+          "Tạo Chuyến Đi Thông Minh ✨",
+          style: TextStyle(color: Colors.white),
+        ),
         backgroundColor: const Color(0xFF153359),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
@@ -62,7 +70,9 @@ class _AiTripPlannerPageState extends State<AiTripPlannerPage> {
               controller: _destinationController,
               decoration: InputDecoration(
                 labelText: "Điểm đến (VD: Đà Lạt)",
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 prefixIcon: const Icon(Icons.location_on),
               ),
             ),
@@ -71,7 +81,9 @@ class _AiTripPlannerPageState extends State<AiTripPlannerPage> {
               controller: _durationController,
               decoration: InputDecoration(
                 labelText: "Thời gian (VD: 3 ngày 2 đêm)",
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 prefixIcon: const Icon(Icons.timer),
               ),
             ),
@@ -80,7 +92,9 @@ class _AiTripPlannerPageState extends State<AiTripPlannerPage> {
               controller: _fromLocationController,
               decoration: InputDecoration(
                 labelText: "Điểm xuất phát (VD: Hà Nội)",
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 prefixIcon: const Icon(Icons.flight_takeoff),
               ),
             ),
@@ -90,7 +104,9 @@ class _AiTripPlannerPageState extends State<AiTripPlannerPage> {
               keyboardType: TextInputType.number,
               decoration: InputDecoration(
                 labelText: "Số người (VD: 2 người)",
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 prefixIcon: const Icon(Icons.people),
               ),
             ),
@@ -104,13 +120,19 @@ class _AiTripPlannerPageState extends State<AiTripPlannerPage> {
                 onPressed: _isLoading ? null : _generateTrip,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF153359),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
                 child: _isLoading
                     ? const CircularProgressIndicator(color: Colors.white)
                     : const Text(
                         "Tạo lịch trình",
-                        style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
               ),
             ),

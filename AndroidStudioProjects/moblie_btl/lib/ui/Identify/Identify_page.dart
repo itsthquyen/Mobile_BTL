@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:moblie_btl/model/id_document.dart';
 import 'package:moblie_btl/repository/id_document_repository.dart';
 import 'document_category_page.dart';
@@ -8,9 +9,14 @@ const Color primaryColor = Color(0xFF153359);
 const Color accentGoldColor = Color(0xFFEAD8B1);
 
 /// Trang chính của tính năng Identify - Hiển thị các loại tài liệu định danh
-class IdentifyPage extends StatelessWidget {
+class IdentifyPage extends StatefulWidget {
   const IdentifyPage({super.key});
 
+  @override
+  State<IdentifyPage> createState() => _IdentifyPageState();
+}
+
+class _IdentifyPageState extends State<IdentifyPage> {
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
@@ -26,98 +32,132 @@ class IdentifyPage extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: Colors.grey.shade100,
-      body: Column(
-        children: [
-          // Header
-          _buildHeader(user),
+      body: StreamBuilder<DocumentSnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('users')
+            .doc(userId)
+            .snapshots(),
+        builder: (context, userSnapshot) {
+          // Lấy thông tin user từ stream
+          String displayName =
+              user?.displayName ?? user?.email?.split('@')[0] ?? 'User';
+          String? avatarUrl;
 
-          // Danh sách các loại tài liệu
-          Expanded(
-            child: StreamBuilder<Map<DocumentCategory, int>>(
-              stream: IdDocumentRepository().watchDocumentCounts(userId),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting &&
-                    !snapshot.hasData) {
-                  return const Center(
-                    child: CircularProgressIndicator(color: primaryColor),
-                  );
-                }
+          if (userSnapshot.hasData && userSnapshot.data!.exists) {
+            final userData = userSnapshot.data!.data() as Map<String, dynamic>?;
+            if (userData != null) {
+              displayName = userData['displayName'] ?? displayName;
+              avatarUrl = userData['avatarUrl'];
+            }
+          }
 
-                if (snapshot.hasError) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.error_outline,
-                          size: 48,
-                          color: Colors.red.withValues(alpha: 0.7),
+          return Column(
+            children: [
+              // Header với avatar realtime
+              _buildHeader(displayName, avatarUrl),
+
+              // Danh sách các loại tài liệu
+              Expanded(
+                child: StreamBuilder<Map<DocumentCategory, int>>(
+                  stream: IdDocumentRepository().watchDocumentCounts(userId),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting &&
+                        !snapshot.hasData) {
+                      return const Center(
+                        child: CircularProgressIndicator(color: primaryColor),
+                      );
+                    }
+
+                    if (snapshot.hasError) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.error_outline,
+                              size: 48,
+                              color: Colors.red.withValues(alpha: 0.7),
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Lỗi: ${snapshot.error}',
+                              style: TextStyle(color: Colors.grey.shade600),
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Lỗi: ${snapshot.error}',
-                          style: TextStyle(color: Colors.grey.shade600),
+                      );
+                    }
+
+                    final counts = snapshot.data ?? {};
+
+                    return ListView(
+                      padding: const EdgeInsets.only(
+                        top: 20.0,
+                        left: 20.0,
+                        right: 20.0,
+                        bottom: 20.0,
+                      ),
+                      children: [
+                        _buildDocumentCard(
+                          context: context,
+                          userId: userId,
+                          category: DocumentCategory.passport,
+                          icon: Icons.public,
+                          count: counts[DocumentCategory.passport] ?? 0,
+                        ),
+                        const SizedBox(height: 15),
+                        _buildDocumentCard(
+                          context: context,
+                          userId: userId,
+                          category: DocumentCategory.idCard,
+                          icon: Icons.credit_card,
+                          count: counts[DocumentCategory.idCard] ?? 0,
+                        ),
+                        const SizedBox(height: 15),
+                        _buildDocumentCard(
+                          context: context,
+                          userId: userId,
+                          category: DocumentCategory.driverLicense,
+                          icon: Icons.badge,
+                          count: counts[DocumentCategory.driverLicense] ?? 0,
+                        ),
+                        const SizedBox(height: 15),
+                        _buildDocumentCard(
+                          context: context,
+                          userId: userId,
+                          category: DocumentCategory.other,
+                          icon: Icons.folder,
+                          count: counts[DocumentCategory.other] ?? 0,
                         ),
                       ],
-                    ),
-                  );
-                }
-
-                final counts = snapshot.data ?? {};
-
-                return ListView(
-                  padding: const EdgeInsets.only(
-                    top: 20.0,
-                    left: 20.0,
-                    right: 20.0,
-                    bottom: 20.0,
-                  ),
-                  children: [
-                    _buildDocumentCard(
-                      context: context,
-                      userId: userId,
-                      category: DocumentCategory.passport,
-                      icon: Icons.public,
-                      count: counts[DocumentCategory.passport] ?? 0,
-                    ),
-                    const SizedBox(height: 15),
-                    _buildDocumentCard(
-                      context: context,
-                      userId: userId,
-                      category: DocumentCategory.idCard,
-                      icon: Icons.credit_card,
-                      count: counts[DocumentCategory.idCard] ?? 0,
-                    ),
-                    const SizedBox(height: 15),
-                    _buildDocumentCard(
-                      context: context,
-                      userId: userId,
-                      category: DocumentCategory.driverLicense,
-                      icon: Icons.badge,
-                      count: counts[DocumentCategory.driverLicense] ?? 0,
-                    ),
-                    const SizedBox(height: 15),
-                    _buildDocumentCard(
-                      context: context,
-                      userId: userId,
-                      category: DocumentCategory.other,
-                      icon: Icons.folder,
-                      count: counts[DocumentCategory.other] ?? 0,
-                    ),
-                  ],
-                );
-              },
-            ),
-          ),
-        ],
+                    );
+                  },
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
 
-  Widget _buildHeader(User? user) {
-    final displayName =
-        user?.displayName ?? user?.email?.split('@')[0] ?? 'User';
+  ImageProvider<Object>? _getAvatarImage(String? avatarUrl) {
+    if (avatarUrl == null || avatarUrl.isEmpty) return null;
 
+    if (avatarUrl.startsWith('assets/')) {
+      return AssetImage(avatarUrl);
+    } else if (avatarUrl.startsWith('http')) {
+      return NetworkImage(avatarUrl);
+    }
+    return null;
+  }
+
+  bool _hasValidAvatar(String? avatarUrl) {
+    if (avatarUrl == null || avatarUrl.isEmpty) return false;
+    return avatarUrl.startsWith('assets/') || avatarUrl.startsWith('http');
+  }
+
+  Widget _buildHeader(String displayName, String? avatarUrl) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.only(top: 50, bottom: 30, left: 20, right: 20),
@@ -143,21 +183,28 @@ class IdentifyPage extends StatelessWidget {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              // Avatar
+              // Avatar - Đồng bộ với profile
               CircleAvatar(
                 radius: 18,
                 backgroundColor: Colors.white,
-                child: CircleAvatar(
-                  radius: 16,
-                  backgroundColor: accentGoldColor,
-                  child: Text(
-                    displayName[0].toUpperCase(),
-                    style: const TextStyle(
-                      color: primaryColor,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
+                child: _hasValidAvatar(avatarUrl)
+                    ? CircleAvatar(
+                        radius: 16,
+                        backgroundImage: _getAvatarImage(avatarUrl),
+                      )
+                    : CircleAvatar(
+                        radius: 16,
+                        backgroundColor: accentGoldColor,
+                        child: Text(
+                          displayName.isNotEmpty
+                              ? displayName[0].toUpperCase()
+                              : 'U',
+                          style: const TextStyle(
+                            color: primaryColor,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
               ),
             ],
           ),

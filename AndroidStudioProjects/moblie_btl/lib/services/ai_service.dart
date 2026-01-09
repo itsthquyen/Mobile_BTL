@@ -1,10 +1,9 @@
 import 'dart:convert';
 import 'package:google_generative_ai/google_generative_ai.dart';
-import '../models/trip.dart'; 
 
 class AiService {
   // API Key của bạn
-  static const String _apiKey = 'AIzaSyCC5TEFMImv8E693F0D6W8MSbw-v0sDbYU';
+  static const String _apiKey = 'AIzaSyBEhVX4jHYynlVxeUeT6L85ujKE8IjVYn8';
 
   late final GenerativeModel _model;
 
@@ -23,8 +22,14 @@ class AiService {
     );
   }
 
-  Future<String> generateTripSchedule(String destination, String duration, String fromLocation, String peopleCount) async {
-    final prompt = '''
+  Future<String> generateTripSchedule(
+    String destination,
+    String duration,
+    String fromLocation,
+    String peopleCount,
+  ) async {
+    final prompt =
+        '''
       Lập một lịch trình du lịch chi tiết cho chuyến đi đến $destination trong $duration.
       Xuất phát từ: $fromLocation
       Số lượng người: $peopleCount
@@ -44,7 +49,7 @@ class AiService {
       final response = await _model.generateContent(content);
       return response.text ?? "Không thể tạo lịch trình lúc này.";
     } catch (e) {
-      print("Lỗi đầy đủ từ AI Service: $e"); 
+      print("Lỗi đầy đủ từ AI Service: $e");
       return "Lỗi khi gọi AI: $e";
     }
   }
@@ -96,7 +101,6 @@ class AiService {
 
       final List<dynamic> jsonList = jsonDecode(text);
       return jsonList.cast<Map<String, dynamic>>();
-
     } catch (e) {
       print("Lỗi tạo sample trips: $e");
       return [];

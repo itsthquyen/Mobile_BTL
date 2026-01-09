@@ -103,4 +103,30 @@ class VoteRepository {
 
     return names;
   }
+
+  /// Lấy thông tin user bao gồm tên và avatar URL
+  Future<Map<String, Map<String, String>>> getMemberInfo(
+    List<String> userIds,
+  ) async {
+    Map<String, Map<String, String>> memberInfo = {};
+
+    for (String userId in userIds) {
+      final doc = await _firestore.collection('users').doc(userId).get();
+      if (doc.exists) {
+        final data = doc.data()!;
+        memberInfo[userId] = {
+          'name':
+              data['displayName'] ??
+              data['name'] ??
+              data['email'] ??
+              'Người dùng',
+          'avatarUrl': data['avatarUrl'] ?? '',
+        };
+      } else {
+        memberInfo[userId] = {'name': 'Người dùng', 'avatarUrl': ''};
+      }
+    }
+
+    return memberInfo;
+  }
 }

@@ -27,8 +27,8 @@ class _VotesTabContentState extends State<VotesTabContent> {
   final VoteRepository _repository = VoteRepository();
   final String? _currentUserId = FirebaseAuth.instance.currentUser?.uid;
 
-  // Cache for member names
-  Map<String, String> _memberNames = {};
+  // Cache for member info (names and avatars)
+  Map<String, Map<String, String>> _memberInfo = {};
 
   @override
   void initState() {
@@ -38,12 +38,12 @@ class _VotesTabContentState extends State<VotesTabContent> {
 
   Future<void> _loadMemberNames() async {
     try {
-      final names = await _repository.getMemberNames(
+      final info = await _repository.getMemberInfo(
         widget.members.keys.toList().cast<String>(),
       );
       if (mounted) {
         setState(() {
-          _memberNames = names;
+          _memberInfo = info;
         });
       }
     } catch (e) {
@@ -55,7 +55,7 @@ class _VotesTabContentState extends State<VotesTabContent> {
     if (_currentUserId == null) return;
 
     try {
-      await _repository.toggleVote(widget.tripId, optionId, _currentUserId!);
+      await _repository.toggleVote(widget.tripId, optionId, _currentUserId);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(
@@ -222,8 +222,9 @@ class _VotesTabContentState extends State<VotesTabContent> {
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
-                children: option.votes.map((userId) { // Sửa ở đây
-                  final name = _memberNames[userId] ?? 'Người dùng';
+                children: option.votes.map((userId) {
+                  final info = _memberInfo[userId];
+                  final name = info?['name'] ?? 'Người dùng';
                   return Chip(
                     backgroundColor: accentGoldColor.withValues(alpha: 0.2),
                     label: Text(
@@ -278,6 +279,24 @@ class _VotesTabContentState extends State<VotesTabContent> {
     );
   }
 
+  // Helper để lấy ImageProvider phù hợp cho avatar (asset hoặc network)
+  ImageProvider<Object>? _getAvatarImage(String? avatarUrl) {
+    if (avatarUrl == null || avatarUrl.isEmpty) return null;
+
+    if (avatarUrl.startsWith('assets/')) {
+      return AssetImage(avatarUrl);
+    } else if (avatarUrl.startsWith('http')) {
+      return NetworkImage(avatarUrl);
+    }
+    return null;
+  }
+
+  // Kiểm tra xem avatar có hợp lệ không
+  bool _hasValidAvatar(String? avatarUrl) {
+    if (avatarUrl == null || avatarUrl.isEmpty) return false;
+    return avatarUrl.startsWith('assets/') || avatarUrl.startsWith('http');
+  }
+
   Widget _buildVoterAvatars(List<String> voterIds) {
     // Use consistent colors based on user ID hash
     final colors = [
@@ -295,24 +314,32 @@ class _VotesTabContentState extends State<VotesTabContent> {
       child: Stack(
         children:
             List.generate(min(voterIds.length, 4), (index) {
-              final userId = voterIds[index]; // Sửa ở đây
-              final name = _memberNames[userId] ?? 'U';
+              final userId = voterIds[index];
+              final info = _memberInfo[userId];
+              final name = info?['name'] ?? 'U';
+              final avatarUrl = info?['avatarUrl'] ?? '';
               final colorIndex = userId.hashCode.abs() % colors.length;
 
               return Positioned(
                 left: (18.0 * index),
-                child: CircleAvatar(
-                  radius: 12,
-                  backgroundColor: colors[colorIndex],
-                  child: Text(
-                    name.isNotEmpty ? name[0].toUpperCase() : 'U',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
+                child: _hasValidAvatar(avatarUrl)
+                    ? CircleAvatar(
+                        radius: 12,
+                        backgroundImage: _getAvatarImage(avatarUrl),
+                        backgroundColor: colors[colorIndex],
+                      )
+                    : CircleAvatar(
+                        radius: 12,
+                        backgroundColor: colors[colorIndex],
+                        child: Text(
+                          name.isNotEmpty ? name[0].toUpperCase() : 'U',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
               );
             })..addAll(
               voterIds.length > 4

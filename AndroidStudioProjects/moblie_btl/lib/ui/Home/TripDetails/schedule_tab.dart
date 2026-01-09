@@ -4,16 +4,16 @@ import 'package:flutter/material.dart';
 import 'add_schedule.dart'; // Import để có thể gọi modal
 
 const primaryColor = Color(0xFF153359);
-const accentGoldColor = Color(0xFFEAD8B1); 
+const accentGoldColor = Color(0xFFEAD8B1);
 
 class ScheduleTabContent extends StatelessWidget {
   final String tripId;
   final bool isAdmin;
 
   const ScheduleTabContent({
-    super.key, 
-    required this.tripId, 
-    required this.isAdmin
+    super.key,
+    required this.tripId,
+    required this.isAdmin,
   });
 
   Stream<QuerySnapshot> _getScheduleStream() {
@@ -26,8 +26,29 @@ class ScheduleTabContent extends StatelessWidget {
   }
 
   String _formatDateTime(DateTime dt, String format) {
-    const monthNames = ['Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6', 'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12'];
-    const dayNames = ['Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy', 'Chủ Nhật'];
+    const monthNames = [
+      'Tháng 1',
+      'Tháng 2',
+      'Tháng 3',
+      'Tháng 4',
+      'Tháng 5',
+      'Tháng 6',
+      'Tháng 7',
+      'Tháng 8',
+      'Tháng 9',
+      'Tháng 10',
+      'Tháng 11',
+      'Tháng 12',
+    ];
+    const dayNames = [
+      'Thứ Hai',
+      'Thứ Ba',
+      'Thứ Tư',
+      'Thứ Năm',
+      'Thứ Sáu',
+      'Thứ Bảy',
+      'Chủ Nhật',
+    ];
 
     if (format == 'EEEE, dd MMMM yyyy') {
       return '${dayNames[dt.weekday - 1]}, ${dt.day} ${monthNames[dt.month - 1]} ${dt.year}';
@@ -37,9 +58,13 @@ class ScheduleTabContent extends StatelessWidget {
     }
     return dt.toString();
   }
-  
+
   // --- HÀM MỞ MODAL CHỈNH SỬA ---
-  void _showEditScheduleModal(BuildContext context, String scheduleId, Map<String, dynamic> scheduleData) {
+  void _showEditScheduleModal(
+    BuildContext context,
+    String scheduleId,
+    Map<String, dynamic> scheduleData,
+  ) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -66,10 +91,17 @@ class ScheduleTabContent extends StatelessWidget {
       stream: _getScheduleStream(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator(color: Colors.white));
+          return const Center(
+            child: CircularProgressIndicator(color: Colors.white),
+          );
         }
         if (snapshot.hasError) {
-          return Center(child: Text('Lỗi: ${snapshot.error}', style: const TextStyle(color: Colors.white)));
+          return Center(
+            child: Text(
+              'Lỗi: ${snapshot.error}',
+              style: const TextStyle(color: Colors.white),
+            ),
+          );
         }
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
           return _buildEmptyState();
@@ -97,7 +129,7 @@ class ScheduleTabContent extends StatelessWidget {
           itemBuilder: (context, index) {
             final day = sortedDays[index];
             final items = groupedByDay[day]!;
-            
+
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -105,11 +137,22 @@ class ScheduleTabContent extends StatelessWidget {
                   padding: const EdgeInsets.only(top: 24.0, bottom: 12.0),
                   child: Text(
                     _formatDateTime(day, 'EEEE, dd MMMM yyyy'),
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
                 // Truyền context vào _buildScheduleItem
-                ...items.map((doc) => _buildScheduleItem(context, doc.id, doc.data() as Map<String, dynamic>, user?.uid)).toList(),
+                ...items.map(
+                  (doc) => _buildScheduleItem(
+                    context,
+                    doc.id,
+                    doc.data() as Map<String, dynamic>,
+                    user?.uid,
+                  ),
+                ),
               ],
             );
           },
@@ -119,12 +162,17 @@ class ScheduleTabContent extends StatelessWidget {
   }
 
   // --- WIDGET CHO MỘT LỊCH TRÌNH (SỬA LẠI ĐỂ NHẬN CONTEXT VÀ UID) ---
-  Widget _buildScheduleItem(BuildContext context, String docId, Map<String, dynamic> data, String? currentUserId) {
+  Widget _buildScheduleItem(
+    BuildContext context,
+    String docId,
+    Map<String, dynamic> data,
+    String? currentUserId,
+  ) {
     final startTime = (data['startTime'] as Timestamp).toDate();
     final endTime = (data['endTime'] as Timestamp).toDate();
-    
+
     // Sử dụng quyền được truyền vào
-    final canEdit = isAdmin; 
+    final canEdit = isAdmin;
 
     final itemContent = Container(
       margin: const EdgeInsets.only(bottom: 12.0),
@@ -134,7 +182,9 @@ class ScheduleTabContent extends StatelessWidget {
         border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
       ),
       child: InkWell(
-        onTap: canEdit ? () => _showEditScheduleModal(context, docId, data) : null,
+        onTap: canEdit
+            ? () => _showEditScheduleModal(context, docId, data)
+            : null,
         borderRadius: BorderRadius.circular(12),
         child: IntrinsicHeight(
           child: Row(
@@ -144,38 +194,75 @@ class ScheduleTabContent extends StatelessWidget {
                 width: 8,
                 decoration: const BoxDecoration(
                   color: accentGoldColor,
-                  borderRadius: BorderRadius.only(topLeft: Radius.circular(12), bottomLeft: Radius.circular(12)),
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(12),
+                    bottomLeft: Radius.circular(12),
+                  ),
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 16,
+                ),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(_formatDateTime(startTime, 'HH:mm'), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white)),
+                    Text(
+                      _formatDateTime(startTime, 'HH:mm'),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: Colors.white,
+                      ),
+                    ),
                     const Text('-', style: TextStyle(color: Colors.white70)),
-                    Text(_formatDateTime(endTime, 'HH:mm'), style: const TextStyle(color: Colors.white70, fontSize: 14)),
+                    Text(
+                      _formatDateTime(endTime, 'HH:mm'),
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 14,
+                      ),
+                    ),
                   ],
                 ),
               ),
               Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 16,
+                    horizontal: 8,
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(data['title'] ?? 'Không có tiêu đề', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white)),
-                      if (data['locationName'] != null && data['locationName'].isNotEmpty)
+                      Text(
+                        data['title'] ?? 'Không có tiêu đề',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          color: Colors.white,
+                        ),
+                      ),
+                      if (data['locationName'] != null &&
+                          data['locationName'].isNotEmpty)
                         Padding(
                           padding: const EdgeInsets.only(top: 4.0),
                           child: Row(
                             children: [
-                              const Icon(Icons.location_on, size: 14, color: Colors.white70),
+                              const Icon(
+                                Icons.location_on,
+                                size: 14,
+                                color: Colors.white70,
+                              ),
                               const SizedBox(width: 4),
                               Expanded(
                                 child: Text(
                                   data['locationName'],
-                                  style: const TextStyle(color: Colors.white70, fontSize: 14),
+                                  style: const TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 14,
+                                  ),
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
@@ -186,9 +273,8 @@ class ScheduleTabContent extends StatelessWidget {
                   ),
                 ),
               ),
-              if (canEdit)
-                const Icon(Icons.chevron_right, color: Colors.white),
-              const SizedBox(width: 8)
+              if (canEdit) const Icon(Icons.chevron_right, color: Colors.white),
+              const SizedBox(width: 8),
             ],
           ),
         ),
@@ -216,7 +302,9 @@ class ScheduleTabContent extends StatelessWidget {
           builder: (BuildContext context) {
             return AlertDialog(
               title: const Text("Xác nhận xóa"),
-              content: const Text("Bạn có chắc chắn muốn xóa lịch trình này không?"),
+              content: const Text(
+                "Bạn có chắc chắn muốn xóa lịch trình này không?",
+              ),
               actions: <Widget>[
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(false),
@@ -239,17 +327,17 @@ class ScheduleTabContent extends StatelessWidget {
               .collection('itinerary')
               .doc(docId)
               .delete();
-          
+
           if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text("Đã xóa lịch trình")),
-            );
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(const SnackBar(content: Text("Đã xóa lịch trình")));
           }
         } catch (e) {
           if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text("Lỗi xóa: $e")),
-            );
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text("Lỗi xóa: $e")));
           }
         }
       },
@@ -262,11 +350,19 @@ class ScheduleTabContent extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.manage_search_rounded, size: 80, color: accentGoldColor.withValues(alpha: 0.8)),
+          Icon(
+            Icons.manage_search_rounded,
+            size: 80,
+            color: accentGoldColor.withValues(alpha: 0.8),
+          ),
           const SizedBox(height: 16),
           const Text(
             "Chưa có lịch trình",
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
           ),
           const SizedBox(height: 12),
           Padding(
@@ -274,7 +370,11 @@ class ScheduleTabContent extends StatelessWidget {
             child: Text(
               'Nhấn nút "+" để bắt đầu tạo lịch trình cho chuyến đi của bạn.',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 14, color: Colors.white.withValues(alpha: 0.7), height: 1.4),
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.white.withValues(alpha: 0.7),
+                height: 1.4,
+              ),
             ),
           ),
         ],
