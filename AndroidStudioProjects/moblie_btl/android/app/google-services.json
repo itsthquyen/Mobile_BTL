@@ -12,7 +12,20 @@
           "package_name": "com.example.moblie_btl"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "7991489002-setpgsnd14rfcf8q73n15lpgm706c4q4.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.moblie_btl",
+            "certificate_hash": "299396e81b21032e90f653d085b8b1f8b06610e7"
+          }
+        },
+        {
+          "client_id": "7991489002-fro9fe7kdnldf2pisj23egmjsfg9ojni.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyDECovGeeY_ixssp8jM_OVTuADXRcOafSY"
@@ -20,7 +33,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "7991489002-fro9fe7kdnldf2pisj23egmjsfg9ojni.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "7991489002-i1m3i18qfot88mjdk456g583fmdc7gof.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.moblieBtl"
+              }
+            }
+          ]
         }
       }
     },
@@ -31,7 +56,12 @@
           "package_name": "com.example.test_firebase1"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "7991489002-fro9fe7kdnldf2pisj23egmjsfg9ojni.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyDECovGeeY_ixssp8jM_OVTuADXRcOafSY"
@@ -39,7 +69,55 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "7991489002-fro9fe7kdnldf2pisj23egmjsfg9ojni.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "7991489002-i1m3i18qfot88mjdk456g583fmdc7gof.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.moblieBtl"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:7991489002:android:c7e488b25633693df30293",
+        "android_client_info": {
+          "package_name": "com.example.ui"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "7991489002-fro9fe7kdnldf2pisj23egmjsfg9ojni.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDECovGeeY_ixssp8jM_OVTuADXRcOafSY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "7991489002-fro9fe7kdnldf2pisj23egmjsfg9ojni.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "7991489002-i1m3i18qfot88mjdk456g583fmdc7gof.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.moblieBtl"
+              }
+            }
+          ]
         }
       }
     },
@@ -50,7 +128,12 @@
           "package_name": "com.example.untitled"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "7991489002-fro9fe7kdnldf2pisj23egmjsfg9ojni.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyDECovGeeY_ixssp8jM_OVTuADXRcOafSY"
@@ -58,7 +141,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "7991489002-fro9fe7kdnldf2pisj23egmjsfg9ojni.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "7991489002-i1m3i18qfot88mjdk456g583fmdc7gof.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.moblieBtl"
+              }
+            }
+          ]
         }
       }
     }

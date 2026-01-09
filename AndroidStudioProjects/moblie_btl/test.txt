@@ -1,0 +1,120 @@
+erDiagram
+    %% --- KHỐI NGƯỜI DÙNG & ĐỊNH DANH ---
+    USERS ||--|| PROFILES : "có (1-1)"
+    USERS ||--|{ IDENTITIES : "đăng nhập (1-N)"
+    USERS ||--o{ IDENTITY_DOCUMENTS : "sở hữu (1-N)"
+
+    %% --- KHỐI CHUYẾN ĐI ---
+    USERS }|--|{ TRIPS : "tham gia"
+    TRIPS ||--o{ FUNDS : "dòng tiền vào"
+    TRIPS ||--o{ EXPENSES : "dòng tiền ra"
+    TRIPS ||--o{ ITINERARY : "lịch trình"
+    TRIPS ||--o{ DOCUMENTS : "giấy tờ chuyến đi"
+    TRIPS ||--o{ CHECKLIST : "đồ cần mang"
+
+    %% --- QUAN HỆ CHI TIẾT ---
+    USERS ||--o{ FUNDS : "người nộp"
+    USERS ||--o{ EXPENSES : "người chi"
+    USERS ||--o{ CHECKLIST : "người được giao"
+    USERS ||--o{ DOCUMENTS : "người upload"
+    USERS ||--o{ NOTIFICATIONS : "nhận thông báo"
+   
+    
+    USERS {
+        string uid PK
+        string email
+        boolean isActive
+        timestamp createdAt
+        string avatarUrl
+        string displayName
+        createdAt timestamp
+        fcmToken string
+    }
+
+    PROFILES {
+        string profileId PK
+        string userId FK
+        string displayName
+        string avatarUrl
+        string bio
+        string phone
+        string address
+    }
+
+    IDENTITIES {
+        string id PK
+        string userId FK
+        string provider "google/email"
+    }
+
+    IDENTITY_DOCUMENTS {
+        string id PK
+        string userId FK
+        string type "PASSPORT/CCCD"
+        array imageUrls
+        string documentNumber
+        timestamp expiryDate
+    }
+
+    TRIPS {
+        string tripId PK
+        string name
+        string status
+        timestamp startDate
+        timestamp endDate
+        double totalFundCollected
+        double totalFundSpent
+        double currentBalance
+        string joinCode
+    }
+
+    FUNDS {
+        string id PK
+        string tripId FK
+        string userId FK
+        double amount
+        string type "CASH/TRANSFER"
+        timestamp createdAt
+    }
+
+    EXPENSES {
+        string id PK
+        string tripId FK
+        string description
+        double amount
+        string category
+        array participants
+        string paidBy
+        timestamp date
+    }
+
+    ITINERARY {
+        string id PK
+        string tripId FK
+        string title
+        timestamp startTime
+        geopoint location
+        string status
+        map votes "QUAN TRỌNG: Lưu ai đã vote"
+    }
+
+
+    CHECKLIST {
+        string id PK
+        string tripId FK
+        string itemName
+        string assignedTo FK
+        boolean isDone
+    }
+
+    NOTIFICATIONS {
+        string id PK
+        string receiverId FK
+        string actorId FK
+        string type
+        string title
+        string body
+        string targetId
+        boolean isRead
+        timestamp createdAt
+    }
